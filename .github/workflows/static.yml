@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Gestion des Potions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+  @keyframes sparkle {
+    0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    50% { opacity: 0.5; transform: scale(1.3) rotate(180deg); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
+  }
+  @keyframes pulse-heart {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  .sparkle {
+    animation: sparkle 2s ease-in-out infinite;
+    display: inline-block;
+  }
+  .float {
+    animation: float 4s ease-in-out infinite;
+  }
+  .pulse-heart {
+    animation: pulse-heart 1.5s ease-in-out infinite;
+  }
+  .kawaii-gradient {
+    background: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 25%, #FFD6E8 50%, #FFF0F5 75%, #FFE4E1 100%);
+    position: relative;
+  }
+  .kawaii-gradient::after {
+    content: '💕✨💖✨💕✨💖✨💕';
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.4;
+    animation: sparkle 3s linear infinite;
+    pointer-events: none;
+  }
+  .glitter-border {
+    border: 3px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(45deg, #FFB6C1, #FF69B4, #FFB6C1) border-box;
+    box-shadow: 0 0 20px rgba(255, 182, 193, 0.5);
+  }
+</style>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen p-6">
+  <div id="app"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    /* ================= CONSTANTES ================= */
+    const POTIONS = [
+      { name: 'Vitalis 💰 600', cost: 175, price: 600 },
+      { name: 'Damnum Capillus 💰 1200', cost: 550, price: 1200 },
+      { name: 'Panacea Capillus 💰 1100', cost: 435, price: 1100 },
+      { name: 'Mirabilis 💰 810', cost: 75, price: 810 },
+      { name: 'Lepus Dulcedo 💰 2500', cost: 565, price: 2500 },
+      { name: 'Feline Dulcedo 💰 2400', cost: 405, price: 2400 },
+      { name: 'Velocis 💰 2300', cost: 380, price: 2300 },
+      { name: 'Nebula Caeca 💰 2400', cost: 405, price: 2400 },
+      { name: 'Liquor Fortis 💰 1300', cost: 275, price: 1300 },
+      { name: 'Nebula Mentis 💰 2000', cost: 655, price: 2000 },
+      { name: 'Liquor Aurae 💰 1500', cost: 240, price: 1500 },
+      { name: 'Elixir Noctis 💰 1000', cost: 425, price: 1000 },
+      { name: 'Aqua Cupidinis 💰 4000', cost: 525, price: 4000 },
+      { name: 'Aquamens Spiritis 💰 2750', cost: 660, price: 2750 },
+      { name: 'Tue-loup 💰 400', cost: 80, price: 400 },
+      { name: 'Galus Elixis 💰 2000', cost: 0, price: 2000 },
+      { name: 'Pandaline 💰 2500', cost: 585, price: 2500 },
+      { name: 'Bovinette 💰 3000', cost: 680, price: 3000 },
+      { name: "Infusion d'Armoise 💰 600", cost: 50, price: 600 },
+      { name: 'Jus de Figue 💰 800', cost: 600, price: 800 },
+      { name: 'Jus de Mandragora 💰 500', cost: 100, price: 500 },
+      { name: 'Catéchine 💰 600', cost: 100, price: 600 },
+      { name: 'Chaudron Coeur 💰 150000', cost: 7173, price: 150000 }
+    ];
+
+    const INGREDIENTS = [
+      // CONTRAT
+      { name: 'Eau minéral pure', costClauser: 30, costPNJ: 25, category: 'CONTRAT' },
+      // INGREDIENT
+      { name: 'Eau minéral pure ', costClauser: 35, costPNJ: 25, category: 'INGREDIENT' },
+      { name: 'Baie explosive', costClauser: 110, costPNJ: 100, category: 'INGREDIENT' },
+      { name: 'Epine dorsale poisson-lion', costClauser: 60, costPNJ: 50, category: 'INGREDIENT' },
+      { name: 'Aile de chauve souris', costClauser: 100, costPNJ: 90, category: 'INGREDIENT' },
+      { name: 'Baie aconite', costClauser: 20, costPNJ: 15, category: 'INGREDIENT' },
+      { name: 'Corne de licorne', costClauser: 190, costPNJ: 180, category: 'INGREDIENT' },
+      { name: 'Epine de porc-épic', costClauser: 60, costPNJ: 50, category: 'INGREDIENT' },
+      { name: 'Fiole de rosée du matin', costClauser: 100, ccostPNJ: 90, category: 'INGREDIENT' },
+      { name: 'Graine soporifique', costClauser: 90, costPNJ: 80, category: 'INGREDIENT' },
+      { name: 'Ingrédient de potion standard', costClauser: 90, costPNJ: 80, category: 'INGREDIENT' },
+      { name: 'Moustache de chat', costClauser: 110, costPNJ: 100, category: 'INGREDIENT' },
+      { name: 'Ongle de pixie', costClauser: 90, costPNJ: 80, category: 'INGREDIENT' },
+      { name: "Os d'animal", costClauser: 85, costPNJ: 75, category: 'INGREDIENT' },
+      { name: 'Patte de lapin', costClauser: 100, costPNJ: 90, category: 'INGREDIENT' },
+      { name: 'Pierre de la lune', costClauser: 150, costPNJ: 140, category: 'INGREDIENT' },
+      { name: 'Sangsue', costClauser: 70, costPNJ: 60, category: 'INGREDIENT' },
+      { name: 'Patte de poulet', costClauser: 65, costPNJ: 55, category: 'INGREDIENT' },
+      { name: 'Oeil de chauve souris', costClauser: 90, costPNJ: 80, category: 'INGREDIENT' },
+      { name: 'Griffe de Panda', costClauser: 95, costPNJ: 85, category: 'INGREDIENT' },
+      // RECOLTE
+      { name: 'Coeur de troll', costClauser: 400, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Graisse de troll', costClauser: 400, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Sang de salamandre', costClauser: 10, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Fiole de sang', costClauser: 60, costClauser: 0, category: 'RECOLTE' },
+      { name: 'Miel', costClauser: 30, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Ver de terre', costClauser: 30, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'baie de gui', costClauser: 30, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Eucalyptus', costClauser: 40, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Poudre de cacao', costClauser: 50, costPNJ: 0, category: 'RECOLTE' },
+      { name: 'Cristaux rouges', costClauser: 100, costPNJ: 0, category: 'RECOLTE' },
+      // BOTANIQUE 4X
+      { name: 'Asphodèle', costClauser: 500, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Menthe poivrée', costClauser: 510, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Thé vert', costClauser: 520, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Géranium', costClauser: 530, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Roses Broyés', costClauser: 500, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Melanthiaceae', costClauser: 510, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Valériane', costClauser: 500, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Armoise', costClauser: 500, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Mandragora', costClauser: 530, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Ashwagandha', costClauser: 530, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Orchidee Dracula', costClauser: 530, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Bambou', costClauser: 800, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      { name: 'Figues', costClauser: 800, costPNJ: 0, category: 'BOTANIQUE 4X' },
+      // BOUQUIN
+      { name: 'Marmite à potion standard', costClauser: 2000, costPNJ: 1500, category: 'BOUQUIN' },
+      { name: 'Potion 2ème année', costClauser: 3000, costPNJ: 2500, category: 'BOUQUIN' },
+      { name: 'Potion 3ème année', costClauser: 3000, costPNJ: 2500, category: 'BOUQUIN' },
+      { name: 'Potion 4ème année', costClauser: 3000, costPNJ: 2500, category: 'BOUQUIN' },
+      { name: "Pack de l'arrivant productif", costClauser: 2205, costPNJ: 1675, category: 'BOUQUIN' },
+    ];
+
+    const EMPLOYEES = ['Nalumi Astoria', 'Elena Cleorane', 'Sorra Drakeson'];
+    const LOYALTY_POTIONS = [
+      { name: 'Vitalis', pointsCost: 60, potionName: 'Vitalis 💰 600' },
+      { name: 'Damnum Capillus', pointsCost: 120, potionName: 'Damnum Capillus 💰 1200' },
+      { name: 'Panacea Capillus', pointsCost: 110, potionName: 'Panacea Capillus 💰 1100' },
+      { name: 'Mirabilis', pointsCost: 81, potionName: 'Mirabilis 💰 810' },
+      { name: 'Lepus Dulcedo', pointsCost: 250, potionName: 'Lepus Dulcedo 💰 2500' },
+      { name: 'Feline Dulcedo', pointsCost: 240, potionName: 'Feline Dulcedo 💰 2400' },
+      { name: 'Velocis', pointsCost: 230, potionName: 'Velocis 💰 2300' },
+      { name: 'Nebula Caeca', pointsCost: 240, potionName: 'Nebula Caeca 💰 2400' },
+      { name: 'Liquor Fortis', pointsCost: 130, potionName: 'Liquor Fortis 💰 1300' },
+      { name: 'Nebula Mentis', pointsCost: 200, potionName: 'Nebula Mentis 💰 2000' },
+      { name: 'Liquor Aurae', pointsCost: 150, potionName: 'Liquor Aurae 💰 1500' },
+      { name: 'Elixir Noctis', pointsCost: 100, potionName: 'Elixir Noctis 💰 1000' },
+      { name: 'Aqua Cupidinis', pointsCost: 400, potionName: 'Aqua Cupidinis 💰 4000' },
+      { name: 'Aquamens Spiritis', pointsCost: 275, potionName: 'Aquamens Spiritis 💰 2750' },
+      { name: 'Tue-loup', pointsCost: 40, potionName: 'Tue-loup 💰 400' },
+      { name: 'Chaudron Coeur', pointsCost: 2500, potionName: 'Chaudron Coeur 💰 150000' }
+    ];
+
+    const POTION_BUYBACK = [
+      { name: 'Vitalis 💰 600', buybackPrice: 450, loyaltyPoints: 0 },
+      { name: 'Galus Elixis 💰 2000', buybackPrice: 1500, loyaltyPoints: 0 },
+      { name: 'Damnum Capillus 💰 1200', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Panacea Capillus 💰 1100', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Mirabilis 💰 810', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Lepus Dulcedo 💰 2500', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Feline Dulcedo 💰 2400', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Velocis 💰 2300', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Nebula Caeca 💰 2400', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Liquor Fortis 💰 1300', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Nebula Mentis 💰 2000', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Liquor Aurae 💰 1500', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Elixir Noctis 💰 1000', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Aqua Cupidinis 💰 4000', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Aquamens Spiritis 💰 2750', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Tue-loup 💰 400', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Pandaline 💰 2500', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Bovinette 💰 3000', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: "Infusion d'Armoise 💰 600", buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Jus de Figue 💰 800', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Jus de Mandragora 💰 500', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Catéchine 💰 600', buybackPrice: 0, loyaltyPoints: 5 },
+      { name: 'Chaudron Coeur 💰 150000', buybackPrice: 0, loyaltyPoints: 5 }
+    ];
+
+    const BUYBACK_MATERIALS = [
+  { name: 'Fiole de graisse de troll', basePrice: 5, basePoints: 20 },
+  { name: 'Sang Salamandre', basePrice: 5, basePoints: 0.5 },
+  { name: 'Fiole de Sang', basePrice: 5, basePoints: 5 },
+  { name: 'Miel', basePrice: 5, basePoints: 2 },
+  { name: 'Ver de terre', basePrice: 5, basePoints: 2 },
+  { name: 'Baie de gui', basePrice: 5, basePoints: 2 },
+  { name: 'Feuilles Eucalyptus Broye', basePrice: 5, basePoints: 3 },
+  { name: 'Poudre de cacao', basePrice: 5, basePoints: 4 },
+  { name: 'Cristaux Rouges', basePrice: 5, basePoints: 8 },
+  { name: 'Ecorce Lunaire Broye', basePrice: 5, basePoints: 8 },
+  { name: 'Racine Asphodele', basePrice: 100, basePoints: 20 },
+  { name: 'Feuille de menthe poivre broyes', basePrice: 105, basePoints: 21 },
+  { name: 'Thé vert broyés', basePrice: 110, basePoints: 22 },
+  { name: "Pétales de géranium broyé", basePrice: 115, basePoints: 23 },
+  { name: 'Pétales de rose broyés', basePrice: 100, basePoints: 20 },
+  { name: 'Petale de melanthiaceae', basePrice: 105, basePoints: 21 },
+  { name: 'Racine de valériane', basePrice: 100, basePoints: 20 },
+  { name: 'Armoise broyé', basePrice: 100, basePoints: 20 },
+  { name: 'Mandragora', basePrice: 115, basePoints: 23 },
+  { name: 'Poudre Ashwagandha', basePrice: 115, basePoints: 23 },
+  { name: 'Orchidée Dracula broyé', basePrice: 115, basePoints: 23 },
+  { name: 'Bambou broyé', basePrice: 175, basePoints: 35 },
+  { name: 'Figues broyés', basePrice: 175, basePoints: 35 },
+  { name: 'Écailles de serpent', basePrice: 80, basePoints: 16 },
+  { name: 'Poudre de perle', basePrice: 120, basePoints: 24 },
+  { name: 'Plume de phénix', basePrice: 200, basePoints: 40 },
+  { name: 'Racine de gingembre magique', basePrice: 90, basePoints: 18 },
+  { name: 'Essence de vanille étoilée', basePrice: 110, basePoints: 22 },
+  { name: 'Cristaux de glace éternelle', basePrice: 150, basePoints: 30 },
+  { name: 'Sable lunaire', basePrice: 95, basePoints: 19 }
+];
+
+const LOYALTY_RANKS = [
+  { rank: 0, name: 'RANK 0', threshold: 0, multiplier: 1.0, color: 'bg-orange-700' },
+  { rank: 1, name: 'RANK 1', threshold: 500, multiplier: 1.2, color: 'bg-gray-400' },
+  { rank: 2, name: 'RANK 2', threshold: 2500, multiplier: 1.4, color: 'bg-yellow-500' },
+  { rank: 3, name: 'RANK 3', threshold: 5000, multiplier: 1.6, color: 'bg-cyan-400' },
+  { rank: 4, name: 'RANK 4', threshold: 25000, multiplier: 1.8, color: 'bg-blue-500' },
+  { rank: 5, name: 'RANK 5 MAX', threshold: 150000, multiplier: 2.0, color: 'bg-purple-600' }
+];
+    const BASE_SALARY = 30000;
+    const TAX_RATE = 0.45;
+
+    const circleColor = (c) => ['bg-gray-400','bg-blue-400','bg-green-400','bg-yellow-400','bg-orange-400','bg-red-400','bg-purple-500'][c] || 'bg-gray-400';
+
+    /* ================= APP ================= */
+    function App() {
+      /* ===== AUTHENTIFICATION ===== */
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [passwordInput, setPasswordInput] = useState('');
+      
+      const checkPassword = () => {
+        if (passwordInput === 'ClauserElixirRP') {
+          setIsAuthenticated(true);
+          setPasswordInput('');
+        } else {
+          alert('❌ Mot de passe incorrect !');
+          setPasswordInput('');
+        }
+      };
+
+      /* ===== CLIENTS ===== */
+      const [clients, setClients] = useState([
+  { id: 1, firstName: 'Test', lastName: 'NO VIP TEST', owl: '001', circle: 3, vip: null, priorityPlus: false, loyaltyPoints: 0 },
+  { id: 2, firstName: 'TEST 2', lastName: 'VIP BANQUE TEST', owl: '002', circle: 5, vip: 'Vip Banque', priorityPlus: false, loyaltyPoints: 0 },
+  { id: 4, firstName: 'Nalumi', lastName: 'Astoria', owl: '86222', circle: 3, vip: 'Vip Clauser', priorityPlus: false, loyaltyPoints: 0 },
+  { id: 3, firstName: 'TEST 3', lastName: 'LVIP CLAUSER TEST', owl: '003', circle: 2, vip: 'Vip Clauser', priorityPlus: true, loyaltyPoints: 0 }
+]);
+
+      /* ===== COMMANDES ===== */
+      const [orders, setOrders] = useState([]);
+      const [history, setHistory] = useState([]);
+      const [ingredientSales, setIngredientSales] = useState([]);
+      const [accountingHistory, setAccountingHistory] = useState([]);
+      const [buybacks, setBuybacks] = useState([]);
+      const [topCollectorHistory, setTopCollectorHistory] = useState([]);
+
+      /* ===== UI ===== */
+      const [showClients, setShowClients] = useState(false);
+      const [showAddClient, setShowAddClient] = useState(false);
+      const [showAddOrder, setShowAddOrder] = useState(false);
+      const [showIngredientSale, setShowIngredientSale] = useState(false);
+      const [showAccountingHistory, setShowAccountingHistory] = useState(false);
+      const [showBuyback, setShowBuyback] = useState(false);
+      const [showLoyaltyExchange, setShowLoyaltyExchange] = useState(false);
+      const [showTopCollector, setShowTopCollector] = useState(false);
+      const [showPotionBuyback, setShowPotionBuyback] = useState(false);
+
+      /* ===== NOUVEAU CLIENT ===== */
+      const [newClient, setNewClient] = useState({ firstName:'', lastName:'', owl:'', circle:0 });
+
+      /* ===== NOUVELLE COMMANDE ===== */
+      const [clientId, setClientId] = useState('');
+      const [clientSearch, setClientSearch] = useState('');
+      const [potionName, setPotionName] = useState('');
+      const [qty, setQty] = useState(1);
+      const [priorityStandard, setPriorityStandard] = useState(false);
+
+      /* ===== VENTE INGREDIENTS ===== */
+      const [ingredientName, setIngredientName] = useState('');
+      const [ingredientQty, setIngredientQty] = useState(1);
+      const [ingredientEmployee, setIngredientEmployee] = useState('');
+      const [ingredientClientType, setIngredientClientType] = useState('PNJ');
+      const [ingredientCart, setIngredientCart] = useState([]);
+      const [buybackClientId, setBuybackClientId] = useState('');
+const [buybackClientSearch, setBuybackClientSearch] = useState('');
+const [buybackMaterial, setBuybackMaterial] = useState('');
+const [buybackQty, setBuybackQty] = useState(1);
+const [buybackEmployee, setBuybackEmployee] = useState('');
+const [buybackCart, setBuybackCart] = useState([]);
+
+      /* ===== ECHANGE POINTS FIDELITE ===== */
+      const [loyaltyClientId, setLoyaltyClientId] = useState('');
+      const [loyaltyClientSearch, setLoyaltyClientSearch] = useState('');
+      const [loyaltyPotionName, setLoyaltyPotionName] = useState('');
+      const [loyaltyQty, setLoyaltyQty] = useState(1);
+      const [loyaltyEmployee, setLoyaltyEmployee] = useState('');
+
+      /* ===== RACHAT POTIONS ===== */
+      const [potionBuybackClientId, setPotionBuybackClientId] = useState('');
+      const [potionBuybackClientSearch, setPotionBuybackClientSearch] = useState('');
+      const [potionBuybackName, setPotionBuybackName] = useState('');
+      const [potionBuybackQty, setPotionBuybackQty] = useState(1);
+      const [potionBuybackEmployee, setPotionBuybackEmployee] = useState('');
+      const [potionBuybackCart, setPotionBuybackCart] = useState([]);
+      const [potionBuybacks, setPotionBuybacks] = useState([]);
+
+      const potion = POTIONS.find(p => p.name === potionName);
+      const selectedIngredient = INGREDIENTS.find(i => i.name === ingredientName);
+      const selectedBuybackMaterial = BUYBACK_MATERIALS.find(m => m.name === buybackMaterial);
+      const selectedLoyaltyPotion = LOYALTY_POTIONS.find(p => p.name === loyaltyPotionName);
+      const selectedPotionBuyback = POTION_BUYBACK.find(p => p.name === potionBuybackName);
+
+const getLoyaltyRank = (points) => {
+  for (let i = LOYALTY_RANKS.length - 1; i >= 0; i--) {
+    if (points >= LOYALTY_RANKS[i].threshold) {
+      return LOYALTY_RANKS[i];
+    }
+  }
+  return LOYALTY_RANKS[0];
+};
+
+      // Filtrer les clients selon la recherche
+      const filteredClients = clients.filter(c => 
+        c.firstName.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        c.lastName.toLowerCase().includes(clientSearch.toLowerCase()) ||
+        c.owl.toLowerCase().includes(clientSearch.toLowerCase())
+      );
+
+      /* ================= LOGIQUE ================= */
+      const addClient = () => {
+  setClients([...clients, { ...newClient, id: Date.now(), vip: null, priorityPlus: false, loyaltyPoints: 0 }]);
+        setNewClient({ firstName:'', lastName:'', owl:'', circle:0 });
+        setShowAddClient(false);
+      };
+
+      const deleteClient = (id) => {
+        const client = clients.find(c => c.id === id);
+        if (confirm(`⚠️ Êtes-vous sûr de vouloir supprimer ${client.firstName} ${client.lastName} ?\n\nCette action est irréversible !`)) {
+          setClients(clients.filter(c => c.id !== id));
+          alert(`✅ ${client.firstName} ${client.lastName} a été supprimé(e) de la base de données.`);
+        }
+      };
+
+      const toggleVip = (id, vip) => setClients(clients.map(c => c.id===id ? { ...c, vip } : c));
+      const togglePriorityPlus = (id) => setClients(clients.map(c => c.id===id ? { ...c, priorityPlus: !c.priorityPlus } : c));
+
+      const selectClient = (id) => {
+        setClientId(id);
+        setClientSearch('');
+      };
+
+      const addOrder = () => {
+        const client = clients.find(c => c.id == clientId);
+        if (!client || !potion) {
+          alert('Veuillez sélectionner un client et une potion');
+          return;
+        }
+
+        let price = potion.price * qty;
+        if (client.vip==='Vip Clauser') price*=0.9;
+        if (client.vip==='Vip Banque' && potion.name==='Vitalis 💰 600') price*=0.95;
+        if (priorityStandard) price*=1.5;
+
+        setOrders([...orders, {
+  id: Date.now(), 
+  date: new Date().toLocaleString(), 
+  clientId: client.id,
+  potionName, 
+  qty, 
+  baseCost: potion.cost*qty, 
+  price: Math.round(price),
+  failed:0, 
+  paid:false, 
+  completed:false,
+  employee: '',
+          priorityStandard, 
+          priorityPlus: client.priorityPlus
+        }]);
+        
+        setClientId('');
+        setClientSearch('');
+        setPotionName('');
+        setQty(1);
+        setPriorityStandard(false);
+        setShowAddOrder(false);
+      };
+
+      const addIngredientToCart = () => {
+  if (!selectedIngredient) {
+    alert('Veuillez sélectionner un ingrédient');
+    return;
+  }
+
+  const salePrice = selectedIngredient.costClauser;
+  const costPrice = selectedIngredient.costPNJ;
+  const profit = (salePrice - costPrice) * ingredientQty;
+
+  const cartItem = {
+    id: Date.now(),
+    ingredient: selectedIngredient.name,
+    qty: ingredientQty,
+    unitSalePrice: salePrice,
+    unitCostPrice: costPrice,
+    totalSalePrice: salePrice * ingredientQty,
+    totalCostPrice: costPrice * ingredientQty,
+    totalProfit: profit,
+    category: selectedIngredient.category
+  };
+
+  setIngredientCart([...ingredientCart, cartItem]);
+  setIngredientName('');
+  setIngredientQty(1);
+};
+
+const removeIngredientFromCart = (id) => {
+  setIngredientCart(ingredientCart.filter(item => item.id !== id));
+};
+
+const validateIngredientSale = () => {
+  if (ingredientCart.length === 0) {
+    alert('Le panier est vide');
+    return;
+  }
+  if (!ingredientEmployee) {
+    alert('Veuillez sélectionner un employé');
+    return;
+  }
+
+  const salesWithEmployee = ingredientCart.map(item => ({
+    ...item,
+    id: Date.now() + Math.random(),
+    date: new Date().toLocaleString(),
+    employee: ingredientEmployee
+  }));
+
+  setIngredientSales([...ingredientSales, ...salesWithEmployee]);
+  setIngredientCart([]);
+  setIngredientEmployee('');
+  setShowIngredientSale(false);
+};
+const addBuybackToCart = () => {
+  const client = clients.find(c => c.id == buybackClientId);
+  if (!client || !selectedBuybackMaterial) {
+    alert('Veuillez sélectionner un client et un matériau');
+    return;
+  }
+
+  const currentRank = getLoyaltyRank(client.loyaltyPoints);
+  const buybackPrice = Math.round(selectedBuybackMaterial.basePrice * currentRank.multiplier);
+  const totalPrice = buybackPrice * buybackQty;
+  const pointsPerUnit = selectedBuybackMaterial.basePoints * currentRank.multiplier;
+  const pointsEarned = Math.round(pointsPerUnit * buybackQty * 10) / 10;
+
+  const cartItem = {
+    id: Date.now(),
+    material: selectedBuybackMaterial.name,
+    qty: buybackQty,
+    unitPrice: buybackPrice,
+    totalPrice: totalPrice,
+    pointsEarned: pointsEarned,
+    basePoints: selectedBuybackMaterial.basePoints,
+    rankAtAdd: currentRank.name
+  };
+
+  setBuybackCart([...buybackCart, cartItem]);
+  setBuybackMaterial('');
+  setBuybackQty(1);
+};
+
+const removeBuybackFromCart = (id) => {
+  setBuybackCart(buybackCart.filter(item => item.id !== id));
+};
+
+const validateBuyback = () => {
+  const client = clients.find(c => c.id == buybackClientId);
+  if (!client || buybackCart.length === 0) {
+    alert('Le panier est vide');
+    return;
+  }
+  if (!buybackEmployee) {
+    alert('Veuillez sélectionner un employé');
+    return;
+  }
+
+  const totalPoints = buybackCart.reduce((sum, item) => sum + item.pointsEarned, 0);
+  const newPoints = client.loyaltyPoints + totalPoints;
+
+  const buybacksWithDetails = buybackCart.map(item => ({
+    ...item,
+    id: Date.now() + Math.random(),
+    date: new Date().toLocaleString(),
+    clientId: client.id,
+    employee: buybackEmployee
+  }));
+
+  setBuybacks([...buybacks, ...buybacksWithDetails]);
+  setClients(clients.map(c => c.id === client.id ? {...c, loyaltyPoints: newPoints} : c));
+
+  setBuybackCart([]);
+  setBuybackClientId('');
+  setBuybackClientSearch('');
+  setBuybackEmployee('');
+  setShowBuyback(false);
+};
+
+const selectBuybackClient = (id) => {
+  setBuybackClientId(id);
+  setBuybackClientSearch('');
+};
+
+      /* ===== ECHANGE POINTS FIDELITE ===== */
+      const selectLoyaltyClient = (id) => {
+        setLoyaltyClientId(id);
+        setLoyaltyClientSearch('');
+      };
+
+      const exchangeLoyaltyPoints = () => {
+        const client = clients.find(c => c.id == loyaltyClientId);
+        if (!client || !selectedLoyaltyPotion || !loyaltyEmployee) {
+          alert('Veuillez remplir tous les champs');
+          return;
+        }
+
+        const totalPointsCost = selectedLoyaltyPotion.pointsCost * loyaltyQty;
+        if (client.loyaltyPoints < totalPointsCost) {
+          alert(`Points insuffisants ! Le client a ${client.loyaltyPoints} points mais l'échange nécessite ${totalPointsCost} points.`);
+          return;
+        }
+
+        const potion = POTIONS.find(p => p.name === selectedLoyaltyPotion.potionName);
+        const newPoints = client.loyaltyPoints - totalPointsCost;
+
+        // Créer une commande normale qui apparaîtra avec les autres
+        setOrders([...orders, {
+          id: Date.now(),
+          date: new Date().toLocaleString(),
+          clientId: client.id,
+          potionName: selectedLoyaltyPotion.potionName,
+          qty: loyaltyQty,
+          baseCost: potion.cost * loyaltyQty,
+          price: 0, // Prix = 0 car payé en points
+          failed: 0,
+          paid: true, // Déjà payé avec les points
+          completed: false,
+          employee: loyaltyEmployee,
+          priorityStandard: false,
+          priorityPlus: client.priorityPlus,
+          isLoyaltyExchange: true, // Marquer comme échange de points
+          pointsCost: totalPointsCost // Garder trace des points utilisés
+        }]);
+
+        setClients(clients.map(c => c.id === client.id ? {...c, loyaltyPoints: newPoints} : c));
+
+        setLoyaltyClientId('');
+        setLoyaltyClientSearch('');
+        setLoyaltyPotionName('');
+        setLoyaltyQty(1);
+        setLoyaltyEmployee('');
+        setShowLoyaltyExchange(false);
+      };
+
+      /* ===== MEILLEUR COLLECTEUR ===== */
+      const saveTopCollector = () => {
+        if (buybacks.length === 0) {
+          alert('Aucun rachat à analyser pour la période en cours');
+          return;
+        }
+
+        // Calculer les stats par client
+        const clientStats = {};
+        buybacks.forEach(buyback => {
+          if (!clientStats[buyback.clientId]) {
+            const client = clients.find(c => c.id === buyback.clientId);
+            clientStats[buyback.clientId] = {
+              clientId: buyback.clientId,
+              clientName: `${client.firstName} ${client.lastName}`,
+              totalMaterials: 0,
+              totalPoints: 0,
+              totalCost: 0
+            };
+          }
+          clientStats[buyback.clientId].totalMaterials += buyback.qty;
+          clientStats[buyback.clientId].totalPoints += buyback.pointsEarned;
+          clientStats[buyback.clientId].totalCost += buyback.totalPrice;
+        });
+
+        // Trouver le top collecteur
+        const sortedClients = Object.values(clientStats).sort((a, b) => b.totalMaterials - a.totalMaterials);
+        const topCollector = sortedClients[0];
+
+        if (!topCollector) {
+          alert('Impossible de déterminer le meilleur collecteur');
+          return;
+        }
+
+        const periodData = {
+          id: Date.now(),
+          date: new Date().toLocaleString(),
+          topCollector: topCollector,
+          allStats: sortedClients,
+          buybacksArchived: [...buybacks] // Archiver les rachats de cette période
+        };
+
+        setTopCollectorHistory([periodData, ...topCollectorHistory]);
+        
+        // Réinitialiser les rachats pour la nouvelle période
+        setBuybacks([]);
+        
+        alert(`✅ Période clôturée !\n\n🏆 Meilleur collecteur : ${topCollector.clientName}\n📦 ${topCollector.totalMaterials} matériaux collectés\n\nNouvelle période commencée.`);
+      };
+
+      /* ===== RACHAT POTIONS ===== */
+      const selectPotionBuybackClient = (id) => {
+        setPotionBuybackClientId(id);
+        setPotionBuybackClientSearch('');
+      };
+
+      const addPotionBuybackToCart = () => {
+        const client = clients.find(c => c.id == potionBuybackClientId);
+        if (!client || !selectedPotionBuyback) {
+          alert('Veuillez sélectionner un client et une potion');
+          return;
+        }
+
+        const cartItem = {
+          id: Date.now(),
+          potionName: selectedPotionBuyback.name,
+          qty: potionBuybackQty,
+          buybackPrice: selectedPotionBuyback.buybackPrice,
+          totalPrice: selectedPotionBuyback.buybackPrice * potionBuybackQty,
+          loyaltyPoints: selectedPotionBuyback.loyaltyPoints,
+          totalPoints: selectedPotionBuyback.loyaltyPoints * potionBuybackQty
+        };
+
+        setPotionBuybackCart([...potionBuybackCart, cartItem]);
+        setPotionBuybackName('');
+        setPotionBuybackQty(1);
+      };
+
+      const removePotionBuybackFromCart = (id) => {
+        setPotionBuybackCart(potionBuybackCart.filter(item => item.id !== id));
+      };
+
+      const validatePotionBuyback = () => {
+        const client = clients.find(c => c.id == potionBuybackClientId);
+        if (!client || potionBuybackCart.length === 0) {
+          alert('Le panier est vide');
+          return;
+        }
+        if (!potionBuybackEmployee) {
+          alert('Veuillez sélectionner un employé');
+          return;
+        }
+
+        const totalCost = potionBuybackCart.reduce((sum, item) => sum + item.totalPrice, 0);
+        const totalPoints = potionBuybackCart.reduce((sum, item) => sum + item.totalPoints, 0);
+        const newPoints = client.loyaltyPoints + totalPoints;
+
+        const buybacksWithDetails = potionBuybackCart.map(item => ({
+          ...item,
+          id: Date.now() + Math.random(),
+          date: new Date().toLocaleString(),
+          clientId: client.id,
+          employee: potionBuybackEmployee
+        }));
+
+        setPotionBuybacks([...potionBuybacks, ...buybacksWithDetails]);
+        setClients(clients.map(c => c.id === client.id ? {...c, loyaltyPoints: newPoints} : c));
+
+        setPotionBuybackCart([]);
+        setPotionBuybackClientId('');
+        setPotionBuybackClientSearch('');
+        setPotionBuybackEmployee('');
+        setShowPotionBuyback(false);
+      };
+
+      const assignEmployee = (id, employee) => setOrders(orders.map(o => o.id===id ? { ...o, employee } : o));
+const failPotion = (id) => setOrders(orders.map(o => o.id===id ? { ...o, failed:o.failed+1 } : o));
+const togglePaid = (id) => setOrders(orders.map(o => o.id===id ? { ...o, paid:!o.paid } : o));
+const toggleCompleted = (id) => setOrders(orders.map(o => o.id===id ? { ...o, completed:!o.completed } : o));
+const deliver = (o) => { 
+  if (!o.employee) {
+    alert('Vous devez assigner un employé avant de livrer la commande !');
+    return;
+  }
+  if (!o.paid) {
+    alert('La commande doit être payée avant d\'être livrée !');
+    return;
+  }
+  if (!o.completed) {
+    alert('La commande doit être terminée avant d\'être livrée !');
+    return;
+  }
+        setOrders(orders.filter(x=>x.id!==o.id)); 
+        setHistory([...history, o]); 
+      };
+
+      const sortedOrders = [...orders].sort((a, b) => {
+        if (a.priorityPlus && !b.priorityPlus) return -1;
+        if (!a.priorityPlus && b.priorityPlus) return 1;
+        if (a.priorityStandard && !b.priorityStandard) return -1;
+        if (!a.priorityStandard && b.priorityStandard) return 1;
+        return 0;
+      });
+
+      const selectedClient = clients.find(c => c.id == clientId);
+
+      // Calculs comptabilité - Potions
+      const totalRevenuePotions = history.reduce((sum, h) => sum + h.price, 0);
+      const totalProductionCost = history.reduce((sum, h) => sum + h.baseCost, 0);
+      const totalFailureCost = history.reduce((sum, h) => {
+        const potion = POTIONS.find(p => p.name === h.potionName);
+        return sum + (h.failed * potion.cost);
+      }, 0);
+
+      // Calculs comptabilité - Ingrédients
+const totalRevenueIngredients = ingredientSales.reduce((sum, s) => sum + s.totalSalePrice, 0);
+const totalCostIngredients = ingredientSales.reduce((sum, s) => sum + s.totalCostPrice, 0);
+const totalProfitIngredients = totalRevenueIngredients - totalCostIngredients;
+// Calculs comptabilité - Rachats
+const totalBuybackCost = buybacks.reduce((sum, b) => sum + b.totalPrice, 0);
+
+      // Totaux globaux
+const totalRevenue = totalRevenuePotions + totalRevenueIngredients;
+const totalCost = totalProductionCost + totalFailureCost + totalCostIngredients + totalBuybackCost;
+      const grossProfit = totalRevenue - totalCost;
+      
+      // Calculs salaires et primes par employé
+      const employeeStats = {};
+      EMPLOYEES.forEach(emp => {
+        const empOrders = history.filter(h => h.employee === emp);
+        const empIngredientSales = ingredientSales.filter(s => s.employee === emp);
+        
+        const ordersCompleted = empOrders.length;
+        const ingredientsSold = empIngredientSales.length;
+        const revenueGeneratedPotions = empOrders.reduce((sum, h) => sum + h.price, 0);
+        const revenueGeneratedIngredients = empIngredientSales.reduce((sum, s) => sum + s.totalSalePrice, 0);
+const costIngredients = empIngredientSales.reduce((sum, s) => sum + s.totalCostPrice, 0);
+const profitIngredients = revenueGeneratedIngredients - costIngredients;
+const totalRevenueGenerated = revenueGeneratedPotions + revenueGeneratedIngredients;
+        
+       // Prime de 5% seulement sur le CA au-dessus de 30 000
+const bonusEligibleRevenue = Math.max(0, totalRevenueGenerated - 30000);
+const bonus = Math.round(bonusEligibleRevenue * 0.05);
+const totalSalary = BASE_SALARY + bonus;
+        
+        employeeStats[emp] = {
+          ordersCompleted,
+          ingredientsSold,
+          revenueGeneratedPotions,
+          revenueGeneratedIngredients,
+          totalRevenueGenerated,
+          baseSalary: BASE_SALARY,
+          bonus,
+          totalSalary
+        };
+      });
+      
+      const totalSalaries = Object.values(employeeStats).reduce((sum, s) => sum + s.totalSalary, 0);
+      const taxes = Math.round(grossProfit * TAX_RATE);
+      const netProfit = grossProfit - totalSalaries - taxes;
+      
+      const ordersRevenuePotential = orders.reduce((sum, o) => sum + o.price, 0);
+      const ordersCostCurrent = orders.reduce((sum, o) => {
+        const potion = POTIONS.find(p => p.name === o.potionName);
+        const failCost = o.failed * potion.cost;
+        return sum + o.baseCost + failCost;
+      }, 0);
+
+      const closePeriod = () => {
+        if (history.length === 0 && ingredientSales.length === 0 && buybacks.length === 0) {
+          alert('Aucune vente à clôturer');
+          return;
+        }
+
+        const periodData = {
+          id: Date.now(),
+          date: new Date().toLocaleString(),
+          totalBuybackCost,
+          totalRevenue,
+          totalRevenuePotions,
+          totalRevenueIngredients,
+          totalProductionCost,
+          totalFailureCost,
+          totalCost,
+          grossProfit,
+          totalSalaries,
+          taxes,
+          netProfit,
+          employeeStats: {...employeeStats},
+          ordersCount: history.length,
+           ingredientSalesCount: ingredientSales.length,
+                buybacksCount: buybacks.length,
+                history: [...history],
+              ingredientSales: [...ingredientSales],
+              buybacks: [...buybacks]
+        };
+
+        setAccountingHistory([periodData, ...accountingHistory]);
+        setHistory([]);
+        setIngredientSales([]);
+        setBuybacks([]);
+        alert('Période clôturée ! Les données ont été archivées.');
+      };
+
+      /* ================= UI ================= */
+      
+      // Écran de connexion
+      if (!isAuthenticated) {
+          return (
+              <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400">
+              <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full glitter-border">
+               <div className="text-center mb-6">
+            <div className="text-7xl mb-4 float pulse-heart">🧪</div>
+            <h1 className="text-4xl font-bold mb-2" style={{
+            background: 'linear-gradient(45deg, #FF69B4, #FFB6C1, #FF1493)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+           }}>
+            💖 CLAUS'ER 💖
+           </h1>
+            <p className="text-pink-600 font-medium">✨ Panel de Gestion Kawaii ✨</p>
+           </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🔒 Mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                    placeholder="Entrez le mot de passe..."
+                    value={passwordInput}
+                    onChange={e => setPasswordInput(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && checkPassword()}
+                  />
+                </div>
+                
+                <button
+                  onClick={checkPassword}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200"
+                >
+                  🔓 Se connecter
+                </button>
+              </div>
+              
+              <div className="mt-6 text-center text-xs text-gray-500">
+                <p>Accès réservé au personnel autorisé</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* ===== HEADER ENTREPRISE ===== */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-lg shadow-lg">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">🧪 CLAUS'ER</h1>
+                <p className="text-purple-200 text-sm">Fabrication de potions magiques</p>
+              </div>
+              <div className="text-right">
+                <div className="bg-white bg-opacity-20 px-4 py-2 rounded-lg">
+                  <div className="text-sm text-purple-200">Commandes en cours</div>
+                  <div className="text-3xl font-bold">{sortedOrders.length}</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Employés */}
+              <div className="bg-white bg-opacity-10 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-bold text-lg">👥 Équipe</h3>
+                  <button 
+                    onClick={() => {
+                      const name = prompt('Nom du nouvel employé :');
+                      if (name && name.trim()) {
+                        if (!EMPLOYEES.includes(name.trim())) {
+                          EMPLOYEES.push(name.trim());
+                          alert(`✅ ${name.trim()} a été ajouté à l'équipe !`);
+                        } else {
+                          alert('❌ Cet employé existe déjà !');
+                        }
+                      }
+                    }}
+                    className="bg-white bg-opacity-20 hover:bg-opacity-30 px-3 py-1 rounded text-sm"
+                  >
+                    ➕ Ajouter
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <div className="bg-amber-500 bg-opacity-30 p-2 rounded flex items-center gap-2">
+                    <span className="text-lg">👑</span>
+                    <div className="flex-1">
+                      <div className="font-bold">Nalumi Astoria</div>
+                      <div className="text-xs text-purple-200">Patronne • 🦉 86222</div>
+                    </div>
+                  </div>
+                  <div className="bg-white bg-opacity-10 p-2 rounded flex items-center gap-2">
+                    <span className="text-lg">👤</span>
+                    <div className="flex-1">
+                      <div className="font-medium">Elena Cleorane</div>
+                      <div className="text-xs text-purple-200">🦉 94061</div>
+                    </div>
+                  </div>
+                  <div className="bg-white bg-opacity-10 p-2 rounded flex items-center gap-2">
+                    <span className="text-lg">👤</span>
+                    <div className="flex-1">
+                      <div className="font-medium">Sorra Drakeson</div>
+                      <div className="text-xs text-purple-200">🦉 Non renseigné</div>
+                    </div>
+                  </div>
+                  {EMPLOYEES.filter(e => !['Nalumi Astoria', 'Elena Cleorane', 'Sorra Drakeson'].includes(e)).map(emp => (
+                    <div key={emp} className="bg-white bg-opacity-10 p-2 rounded flex items-center gap-2">
+                      <span className="text-lg">👤</span>
+                      <div className="flex-1">
+                        <div className="font-medium">{emp}</div>
+                        <div className="text-xs text-purple-200">Employé</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Stats rapides */}
+              <div className="bg-white bg-opacity-10 p-4 rounded-lg">
+                <h3 className="font-bold text-lg mb-3">📊 Statistiques</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Clients enregistrés</span>
+                    <span className="font-bold text-xl">{clients.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Rachats en attente</span>
+                    <span className="font-bold text-xl">{buybacks.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Ventes d'ingrédients</span>
+                    <span className="font-bold text-xl">{ingredientSales.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-white border-opacity-20 pt-2 mt-2">
+                    <span className="text-sm">Commandes livrées</span>
+                    <span className="font-bold text-xl text-green-300">{history.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl shadow-xl kawaii-gradient glitter-border">
+  <h1 className="text-3xl font-bold mb-4 text-center text-pink-600 pulse-heart">
+    💖 Menu Principal 💖
+  </h1>
+  <div className="space-y-3">
+    <button className="w-full bg-gradient-to-r from-pink-400 to-rose-400 text-white p-3 rounded-full mb-2 hover:from-pink-500 hover:to-rose-500 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowClients(!showClients); setShowAddOrder(false); setShowIngredientSale(false); setShowBuyback(false); setShowLoyaltyExchange(false); setShowTopCollector(false); setShowPotionBuyback(false);}}>
+      <span className="sparkle">✨</span>👥 Base de clients<span className="sparkle">✨</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-purple-400 to-pink-400 text-white p-3 rounded-full mb-2 hover:from-purple-500 hover:to-pink-500 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowAddOrder(!showAddOrder); setShowClients(false); setShowIngredientSale(false); setShowBuyback(false); setShowLoyaltyExchange(false); setShowTopCollector(false); setShowPotionBuyback(false);}}>
+      <span className="sparkle">💫</span>📝 Nouvelle commande potion<span className="sparkle">💫</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-teal-400 to-cyan-400 text-white p-3 rounded-full mb-2 hover:from-teal-500 hover:to-cyan-500 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowIngredientSale(!showIngredientSale); setShowClients(false); setShowAddOrder(false); setShowBuyback(false); setShowLoyaltyExchange(false); setShowTopCollector(false); setShowPotionBuyback(false);}}>
+      <span className="sparkle">🌟</span>🌿 Vendre des ingrédients<span className="sparkle">🌟</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-white p-3 rounded-full mb-2 hover:from-amber-500 hover:to-orange-500 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowBuyback(!showBuyback); setShowClients(false); setShowAddOrder(false); setShowIngredientSale(false); setShowLoyaltyExchange(false); setShowTopCollector(false); setShowPotionBuyback(false);}}>
+      <span className="sparkle">⭐</span>💎 Racheter des matériaux<span className="sparkle">⭐</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white p-3 rounded-full mb-2 hover:from-rose-500 hover:to-pink-600 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowPotionBuyback(!showPotionBuyback); setShowClients(false); setShowAddOrder(false); setShowIngredientSale(false); setShowBuyback(false); setShowLoyaltyExchange(false); setShowTopCollector(false);}}>
+      <span className="sparkle">💝</span>🧪 Racheter des potions<span className="sparkle">💝</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white p-3 rounded-full mb-2 hover:from-pink-600 hover:to-fuchsia-600 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowLoyaltyExchange(!showLoyaltyExchange); setShowClients(false); setShowAddOrder(false); setShowIngredientSale(false); setShowBuyback(false); setShowTopCollector(false); setShowPotionBuyback(false);}}>
+      <span className="sparkle">💖</span>⭐ Échanger des points de fidélité<span className="sparkle">💖</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-indigo-400 to-purple-500 text-white p-3 rounded-full mb-2 hover:from-indigo-500 hover:to-purple-600 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>{setShowTopCollector(!showTopCollector); setShowClients(false); setShowAddOrder(false); setShowIngredientSale(false); setShowBuyback(false); setShowLoyaltyExchange(false); setShowPotionBuyback(false);}}>
+      <span className="sparkle">🎀</span>🏆 Meilleur collecteur<span className="sparkle">🎀</span>
+    </button>
+    <button className="w-full bg-gradient-to-r from-slate-600 to-slate-700 text-white p-3 rounded-full hover:from-slate-700 hover:to-slate-800 shadow-lg transform hover:scale-105 transition flex items-center justify-center gap-2 font-bold" onClick={()=>alert('Voir section comptabilité en bas')}>
+      <span className="sparkle">💕</span>📊 Comptabilité<span className="sparkle">💕</span>
+    </button>
+  </div>
+</div>
+
+          {/* ===== BASE CLIENTS ===== */}
+          {showClients && (
+  <div className="bg-white p-6 rounded-3xl shadow-xl kawaii-gradient glitter-border">
+    <h2 className="text-xl font-bold mb-4 text-pink-600 flex items-center justify-center gap-2">
+      <span className="sparkle">💖</span>👥 Clients<span className="sparkle">💖</span>
+    </h2>
+              <button className="mb-3 bg-gradient-to-r from-pink-400 to-rose-400 text-white px-4 py-2 rounded-full hover:from-pink-500 hover:to-rose-500 shadow-lg transform hover:scale-105 transition font-bold" onClick={()=>setShowAddClient(!showAddClient)}>
+  ➕ Ajouter client ✨
+</button>
+              {showAddClient && (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <input placeholder="Prénom" className="border p-2 rounded" value={newClient.firstName} onChange={e=>setNewClient({...newClient,firstName:e.target.value})} />
+                  <input placeholder="Nom" className="border p-2 rounded" value={newClient.lastName} onChange={e=>setNewClient({...newClient,lastName:e.target.value})} />
+                  <input placeholder="Hibou" className="border p-2 rounded" value={newClient.owl} onChange={e=>setNewClient({...newClient,owl:e.target.value})} />
+                  <input type="number" min="0" max="6" placeholder="Cercle" className="border p-2 rounded" value={newClient.circle} onChange={e=>setNewClient({...newClient,circle:+e.target.value})} />
+                  <button className="col-span-2 bg-emerald-600 text-white p-2 rounded hover:bg-emerald-700" onClick={addClient}>Créer</button>
+                </div>
+              )}
+
+              {clients.map(c=> {
+                const rank = getLoyaltyRank(c.loyaltyPoints || 0);
+                return (
+                <div key={c.id} className="border-b py-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 ${circleColor(c.circle)} text-white rounded-full flex items-center justify-center font-bold`}>{c.circle}</div>
+                      <div>
+                        <div className="font-medium">{c.firstName} {c.lastName}</div>
+                        <div className="text-sm text-gray-500 flex gap-3 items-center">
+                          <span>🦉 {c.owl}</span>
+                          <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                            {rank.name} ✦{rank.multiplier}x
+                          </span>
+                          <span className="text-amber-600 font-medium">💎 {c.loyaltyPoints || 0} pts</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <select value={c.vip||''} onChange={e=>toggleVip(c.id, e.target.value||null)} className="border p-1 rounded">
+                        <option value="">Sans VIP</option>
+                        <option>Vip Banque</option>
+                        <option>Vip Clauser</option>
+                      </select>
+                      <button onClick={()=>togglePriorityPlus(c.id)} className={`px-3 py-1 ${c.priorityPlus?'bg-pink-500 hover:bg-pink-600':'bg-slate-300 hover:bg-slate-400'} text-white rounded font-medium`}>
+                        Priorité Contrat
+                      </button>
+                      <button 
+                        onClick={()=>deleteClient(c.id)} 
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded font-medium"
+                        title="Supprimer ce client"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                );
+              })}
+                             </div>
+                               )}
+
+                                {/* ===== VENTE INGREDIENTS ===== */}
+                                  {showIngredientSale && (
+                            <div className="bg-white p-6 rounded shadow space-y-3">
+                             <h2 className="text-xl font-bold mb-3">🌿 Vendre des ingrédients</h2>
+              
+              
+
+             
+
+               <div>
+               <label className="block text-sm font-medium mb-1">Ingrédient</label>
+                <select className="w-full p-2 border rounded" value={ingredientName} onChange={e=>setIngredientName(e.target.value)}>
+                 <option value="">Sélectionner un ingrédient</option>
+                     {INGREDIENTS.map(ing => {
+                      const categoryDisplay = ing.category === 'CONTRAT' ? ' (CONTRAT)' : '';
+                      return (
+                     <option key={ing.name} value={ing.name}>
+                      {ing.name} - {ing.costClauser} 💰{categoryDisplay}
+                       </option>
+                          );
+                           })}
+                </select>
+                           </div>
+
+                            {selectedIngredient && (
+                <div className="bg-blue-50 p-3 rounded">
+                      <div className="font-bold">Prix de vente: {selectedIngredient.costClauser} 💰</div>
+                       <div className="text-sm text-gray-600">Coût d'achat: {selectedIngredient.costPNJ} 💰</div>
+                          <div className="text-sm font-medium text-green-600">Profit unitaire: {selectedIngredient.costClauser - selectedIngredient.costPNJ} 💰</div>
+                          <div className="text-sm text-gray-600">Catégorie: {selectedIngredient.category}</div>
+                          </div>
+                          )}
+
+                           <div>
+                              <label className="block text-sm font-medium mb-1">Quantité</label>
+                                <input type="number" min="1" className="w-full p-2 border rounded" value={ingredientQty} onChange={e=>setIngredientQty(+e.target.value)} />
+                                   </div>
+
+                          {selectedIngredient && (
+                           <div className="bg-green-50 p-3 rounded">
+                               <div className="font-bold text-lg">Total vente: {selectedIngredient.costClauser * ingredientQty} 💰</div>
+                            <div className="text-sm text-gray-600">Coût total: {selectedIngredient.costPNJ * ingredientQty} 💰</div>
+                            <div className="text-sm font-bold text-green-600">Profit total: {(selectedIngredient.costClauser - selectedIngredient.costPNJ) * ingredientQty} 💰</div>
+                                </div>
+                                 )}
+
+                                 <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-medium" onClick={addIngredientToCart}>
+                                     🛒 Ajouter au panier
+                                  </button>
+
+                                  {/* PANIER INGREDIENTS */}
+                                  {ingredientCart.length > 0 && (
+                                    <div className="border-2 border-blue-300 rounded p-4 bg-blue-50">
+                                      <h3 className="font-bold text-lg mb-3">🛒 Panier ({ingredientCart.length} article{ingredientCart.length > 1 ? 's' : ''})</h3>
+                                      <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
+                                        {ingredientCart.map(item => (
+                                          <div key={item.id} className="bg-white p-3 rounded flex justify-between items-start">
+                                            <div className="flex-1">
+                                              <div className="font-medium">{item.qty}x {item.ingredient}</div>
+                                              <div className="text-sm text-gray-600">
+                                                Vente: {item.totalSalePrice} 💰 • Coût: {item.totalCostPrice} 💰
+                                              </div>
+                                              <div className="text-sm font-bold text-green-600">
+                                                Profit: +{item.totalProfit} 💰
+                                              </div>
+                                            </div>
+                                            <button onClick={() => removeIngredientFromCart(item.id)} className="text-red-600 hover:text-red-800 font-bold ml-2">
+                                              ✕
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="bg-white p-3 rounded mb-3">
+                                        <div className="font-bold text-lg">Total panier:</div>
+                                        <div className="text-blue-600 font-bold">
+                                          Vente: {ingredientCart.reduce((sum, item) => sum + item.totalSalePrice, 0)} 💰
+                                        </div>
+                                        <div className="text-red-600">
+                                          Coût: {ingredientCart.reduce((sum, item) => sum + item.totalCostPrice, 0)} 💰
+                                        </div>
+                                        <div className="text-green-600 font-bold text-xl">
+                                          Profit: +{ingredientCart.reduce((sum, item) => sum + item.totalProfit, 0)} 💰
+                                        </div>
+                                      </div>
+
+                                      <div className="mb-3">
+                                        <label className="block text-sm font-medium mb-1">Employé vendeur</label>
+                                        <select className="w-full p-2 border rounded" value={ingredientEmployee} onChange={e=>setIngredientEmployee(e.target.value)}>
+                                          <option value="">Sélectionner un employé</option>
+                                          {EMPLOYEES.map(e=><option key={e}>{e}</option>)}
+                                        </select>
+                                      </div>
+
+                                      <button className="w-full bg-emerald-600 text-white p-2 rounded hover:bg-emerald-700 font-medium" onClick={validateIngredientSale}>
+                                        ✓ Valider la vente ({ingredientCart.length} article{ingredientCart.length > 1 ? 's' : ''})
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
+                                     )}
+                                 {/* ===== RACHAT MATERIAUX ===== */}
+                                      {showBuyback && (
+                                        <div className="bg-white p-6 rounded shadow space-y-3">
+                                      <h2 className="text-xl font-bold mb-3">💎 Racheter des matériaux</h2>
+    
+                                       <div className="relative">
+                                         <label className="block text-sm font-medium mb-1">Rechercher un client</label>
+                                          <input 
+                                          type="text"
+                                          placeholder="Tapez un prénom, nom ou numéro de hibou..."
+                                          className="w-full p-2 border rounded"
+                                           value={buybackClientSearch}
+                                             onChange={e=>setBuybackClientSearch(e.target.value)}
+                                              />
+      
+                                              {buybackClientSearch && (
+                                                       <div className="absolute z-10 w-full bg-white border rounded-b shadow-lg max-h-60 overflow-y-auto">
+                                                   {filteredClients.length > 0 ? (
+                                                               filteredClients.map(c => {
+                                                           const rank = getLoyaltyRank(c.loyaltyPoints || 0);
+                                                                   return (
+                                                                 <div 
+                                                                  key={c.id}
+                                                              onClick={() => selectBuybackClient(c.id)}
+                                                            className="p-3 hover:bg-gray-100 cursor-pointer border-b"
+                                                              >
+                  <div className="font-medium flex items-center gap-2">
+                    {c.firstName} {c.lastName}
+                    <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                      {rank.name} ✦{rank.multiplier}x
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-500 flex gap-3">
+                    <span>🦉 {c.owl}</span>
+                    <span className="text-amber-600 font-medium">💎 {c.loyaltyPoints || 0} pts</span>
+                  </div>
+                </div>
+                              );
+                                     })
+                                ) : (
+                                       <div className="p-3 text-gray-500 italic">Aucun client trouvé</div>
+                                     )}
+                                          </div>
+                                             )}
+                                              </div>
+
+                                          {buybackClientId && (() => {
+                                              const selectedBuybackClient = clients.find(c => c.id == buybackClientId);
+                                             const rank = getLoyaltyRank(selectedBuybackClient?.loyaltyPoints || 0);
+                                                    return (
+                                                      <div className="bg-amber-50 border-2 border-amber-300 p-3 rounded">
+                                                  <div className="font-bold text-amber-800">✓ Client sélectionné :</div>
+                                          <div className="flex items-center gap-2 mt-1">
+                                        <span className="font-medium">{selectedBuybackClient.firstName} {selectedBuybackClient.lastName}</span>
+                                          <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                                            {rank.name} ✦{rank.multiplier}x
+                                              </span>
+                                                  </div>
+                                                   <div className="text-sm text-amber-700 mt-1">
+                                               💎 Points actuels : {selectedBuybackClient.loyaltyPoints || 0}
+                                                      </div>
+                                                  <button 
+                                             onClick={() => {setBuybackClientId(''); setBuybackClientSearch(''); setBuybackCart([]);}}
+                                              className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                                     >
+                                         ✕ Changer de client
+                                            </button>
+                                            </div>
+                                                );
+                                                  })()}
+
+                                         <div>
+                                         <label className="block text-sm font-medium mb-1">Matériau</label>
+                                        <select className="w-full p-2 border rounded" value={buybackMaterial} onChange={e=>setBuybackMaterial(e.target.value)}>
+                                               <option value="">Sélectionner un matériau</option>
+                                         {BUYBACK_MATERIALS.map(mat => (
+                                          <option key={mat.name} value={mat.name}>
+                                         {mat.name} - {mat.basePrice} 💰 
+                                             </option>
+                                                 ))}
+                                                         </select>
+                                                  </div>
+
+                                         {selectedBuybackMaterial && buybackClientId && (() => {
+                                                  const client = clients.find(c => c.id == buybackClientId);
+                                           const rank = getLoyaltyRank(client?.loyaltyPoints || 0);
+                                         const adjustedPrice = Math.round(selectedBuybackMaterial.basePrice * rank.multiplier);
+                                                         const totalPrice = adjustedPrice * buybackQty;
+                                               const pointsPerUnit = selectedBuybackMaterial.basePoints * rank.multiplier;
+                                               const pointsEarned = Math.round(pointsPerUnit * buybackQty * 10) / 10;
+
+                                                               return (
+                                                                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded border-2 border-amber-300">
+                                                              <div className="space-y-2">
+                                                              <div className="flex justify-between items-center">
+                                                 <span className="text-sm">Prix de base :</span>
+                                                   <span className="font-medium">{selectedBuybackMaterial.basePrice} 💰</span>
+                                                   </div>
+                                                           <div className="flex justify-between items-center">
+                                                       <span className="text-sm">Multiplicateur {rank.name} :</span>
+                                                   <span className="font-bold text-amber-600">✦{rank.multiplier}x</span>
+                                         </div>
+                                                   <div className="flex justify-between items-center border-t pt-2">
+                                                        <span className="font-medium">Prix unitaire ajusté :</span>
+                                                                 <span className="font-bold text-lg text-green-600">{adjustedPrice} 💰</span>
+                                                                              </div>
+                                                          <div className="flex justify-between items-center">
+                                                                <span className="font-medium">Prix total ({buybackQty}x) :</span>
+                                                                 <span className="font-bold text-xl text-green-600">{totalPrice} 💰</span>
+                                                                           </div>
+                                                                      <div className="flex justify-between items-center border-t pt-2">
+                                                                    <span className="text-sm text-amber-700">Points de base :</span>
+                                                             <span className="font-medium text-amber-600">{selectedBuybackMaterial.basePoints} pts/u</span>
+                                                                  </div>
+                                                                      <div className="flex justify-between items-center">
+                                                                    <span className="text-sm text-amber-700">Points par unité ({rank.name}) :</span>
+                                                             <span className="font-bold text-amber-600">{pointsPerUnit} 💎</span>
+                                                                  </div>
+                                                                      <div className="flex justify-between items-center">
+                                                                    <span className="text-sm text-amber-700">Points gagnés :</span>
+                                                             <span className="font-bold text-amber-600">+{pointsEarned} 💎</span>
+                                                                  </div>
+                                                                        </div>
+                                                                </div>
+                                                                );
+                                                           })()}
+
+                                                              <div>
+                                                          <label className="block text-sm font-medium mb-1">Quantité</label>
+                                                                  <input type="number" min="1" className="w-full p-2 border rounded" value={buybackQty} onChange={e=>setBuybackQty(+e.target.value)} />
+                                                                 </div>
+
+                                                         <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-medium" onClick={addBuybackToCart} disabled={!buybackClientId || !selectedBuybackMaterial}>
+                                                     🛒 Ajouter au panier
+                                                        </button>
+
+                                                        {/* PANIER RACHATS */}
+                                                        {buybackCart.length > 0 && (() => {
+                                                          const client = clients.find(c => c.id == buybackClientId);
+                                                          const totalPrice = buybackCart.reduce((sum, item) => sum + item.totalPrice, 0);
+                                                          const totalPoints = buybackCart.reduce((sum, item) => sum + item.pointsEarned, 0);
+                                                          const newTotalPoints = (client?.loyaltyPoints || 0) + totalPoints;
+                                                          const currentRank = getLoyaltyRank(client?.loyaltyPoints || 0);
+                                                          const newRank = getLoyaltyRank(newTotalPoints);
+
+                                                          return (
+                                                            <div className="border-2 border-amber-300 rounded p-4 bg-amber-50">
+                                                              <h3 className="font-bold text-lg mb-3">🛒 Panier ({buybackCart.length} matériau{buybackCart.length > 1 ? 'x' : ''})</h3>
+                                                              <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
+                                                                {buybackCart.map(item => (
+                                                                  <div key={item.id} className="bg-white p-3 rounded flex justify-between items-start">
+                                                                    <div className="flex-1">
+                                                                      <div className="font-medium">{item.qty}x {item.material}</div>
+                                                                      <div className="text-sm text-gray-600">
+                                                                        Prix: {item.totalPrice} 💰 ({item.unitPrice} 💰/u)
+                                                                      </div>
+                                                                      <div className="text-sm font-bold text-amber-600">
+                                                                        Points: +{item.pointsEarned} 💎
+                                                                      </div>
+                                                                    </div>
+                                                                    <button onClick={() => removeBuybackFromCart(item.id)} className="text-red-600 hover:text-red-800 font-bold ml-2">
+                                                                      ✕
+                                                                    </button>
+                                                                  </div>
+                                                                ))}
+                                                              </div>
+                                                              <div className="bg-white p-3 rounded mb-3">
+                                                                <div className="font-bold text-lg">Total panier:</div>
+                                                                <div className="text-red-600 font-bold text-xl">
+                                                                  Coût: {totalPrice} 💰
+                                                                </div>
+                                                                <div className="text-amber-600 font-bold text-xl">
+                                                                  Points: +{totalPoints} 💎
+                                                                </div>
+                                                                <div className="border-t mt-2 pt-2">
+                                                                  <div className="text-sm">Points actuels: {client?.loyaltyPoints || 0} 💎</div>
+                                                                  <div className="text-sm font-bold text-amber-600">Nouveau total: {newTotalPoints} 💎</div>
+                                                                  {newRank.rank > currentRank.rank && (
+                                                                    <div className="bg-purple-100 border border-purple-400 p-2 rounded text-center mt-2">
+                                                                      <span className="text-purple-800 font-bold text-sm">
+                                                                        🎉 RANG UP ! {currentRank.name} → {newRank.name}
+                                                                      </span>
+                                                                    </div>
+                                                                  )}
+                                                                </div>
+                                                              </div>
+
+                                                              <div className="mb-3">
+                                                                <label className="block text-sm font-medium mb-1">Employé acheteur</label>
+                                                                <select className="w-full p-2 border rounded" value={buybackEmployee} onChange={e=>setBuybackEmployee(e.target.value)}>
+                                                                  <option value="">Sélectionner un employé</option>
+                                                                  {EMPLOYEES.map(e=><option key={e}>{e}</option>)}
+                                                                </select>
+                                                              </div>
+
+                                                              <button className="w-full bg-amber-600 text-white p-2 rounded hover:bg-amber-700 font-medium" onClick={validateBuyback}>
+                                                                💎 Valider le rachat ({buybackCart.length} matériau{buybackCart.length > 1 ? 'x' : ''})
+                                                              </button>
+                                                            </div>
+                                                          );
+                                                        })()}
+                                                         </div>
+                                                                )}
+
+                             {/* ===== ECHANGE POINTS FIDELITE ===== */}
+                             {/* ===== RACHAT POTIONS ===== */}
+                             {showPotionBuyback && (
+                               <div className="bg-white p-6 rounded shadow space-y-3">
+                                 <h2 className="text-xl font-bold mb-3">🧪 Racheter des potions</h2>
+                                 
+                                 <div className="relative">
+                                   <label className="block text-sm font-medium mb-1">Rechercher un client</label>
+                                   <input 
+                                     type="text"
+                                     placeholder="Tapez un prénom, nom ou numéro de hibou..."
+                                     className="w-full p-2 border rounded"
+                                     value={potionBuybackClientSearch}
+                                     onChange={e=>setPotionBuybackClientSearch(e.target.value)}
+                                   />
+                                   
+                                   {potionBuybackClientSearch && (
+                                     <div className="absolute z-10 w-full bg-white border rounded-b shadow-lg max-h-60 overflow-y-auto">
+                                       {filteredClients.length > 0 ? (
+                                         filteredClients.map(c => {
+                                           const rank = getLoyaltyRank(c.loyaltyPoints || 0);
+                                           return (
+                                             <div 
+                                               key={c.id}
+                                               onClick={() => selectPotionBuybackClient(c.id)}
+                                               className="p-3 hover:bg-gray-100 cursor-pointer border-b"
+                                             >
+                                               <div className="font-medium flex items-center gap-2">
+                                                 {c.firstName} {c.lastName}
+                                                 <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                                                   {rank.name}
+                                                 </span>
+                                               </div>
+                                               <div className="text-sm text-gray-500 flex gap-3">
+                                                 <span>🦉 {c.owl}</span>
+                                                 <span className="text-amber-600 font-medium">💎 {c.loyaltyPoints || 0} pts</span>
+                                               </div>
+                                             </div>
+                                           );
+                                         })
+                                       ) : (
+                                         <div className="p-3 text-gray-500 italic">Aucun client trouvé</div>
+                                       )}
+                                     </div>
+                                   )}
+                                 </div>
+
+                                 {potionBuybackClientId && (() => {
+                                   const selectedPotionBuybackClient = clients.find(c => c.id == potionBuybackClientId);
+                                   const rank = getLoyaltyRank(selectedPotionBuybackClient?.loyaltyPoints || 0);
+                                   return (
+                                     <div className="bg-rose-50 border-2 border-rose-300 p-3 rounded">
+                                       <div className="font-bold text-rose-800">✓ Client sélectionné :</div>
+                                       <div className="flex items-center gap-2 mt-1">
+                                         <span className="font-medium">{selectedPotionBuybackClient.firstName} {selectedPotionBuybackClient.lastName}</span>
+                                         <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                                           {rank.name}
+                                         </span>
+                                       </div>
+                                       <div className="text-sm text-rose-700 mt-1">
+                                         💎 Points actuels : {selectedPotionBuybackClient.loyaltyPoints || 0}
+                                       </div>
+                                       <button 
+                                         onClick={() => {setPotionBuybackClientId(''); setPotionBuybackClientSearch(''); setPotionBuybackCart([]);}}
+                                         className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                       >
+                                         ✕ Changer de client
+                                       </button>
+                                     </div>
+                                   );
+                                 })()}
+
+                                 <div>
+                                   <label className="block text-sm font-medium mb-1">Potion</label>
+                                   <select className="w-full p-2 border rounded" value={potionBuybackName} onChange={e=>setPotionBuybackName(e.target.value)}>
+                                     <option value="">Sélectionner une potion</option>
+                                     {POTION_BUYBACK.map(p => (
+                                       <option key={p.name} value={p.name}>
+                                         {p.name} - {p.buybackPrice > 0 ? `${p.buybackPrice} 💰` : `${p.loyaltyPoints} 💎 points`}
+                                       </option>
+                                     ))}
+                                   </select>
+                                 </div>
+
+                                 {selectedPotionBuyback && (
+                                   <div className="bg-blue-50 p-3 rounded">
+                                     <div className="font-bold">{selectedPotionBuyback.name}</div>
+                                     {selectedPotionBuyback.buybackPrice > 0 ? (
+                                       <div className="text-sm text-blue-600">Prix de rachat : {selectedPotionBuyback.buybackPrice} 💰</div>
+                                     ) : (
+                                       <div className="text-sm text-purple-600">Points gagnés : {selectedPotionBuyback.loyaltyPoints} 💎</div>
+                                     )}
+                                   </div>
+                                 )}
+
+                                 <div>
+                                   <label className="block text-sm font-medium mb-1">Quantité</label>
+                                   <input type="number" min="1" className="w-full p-2 border rounded" value={potionBuybackQty} onChange={e=>setPotionBuybackQty(+e.target.value)} />
+                                 </div>
+
+                                 {selectedPotionBuyback && (
+                                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded border-2 border-blue-300">
+                                     <div className="space-y-2">
+                                       <div className="flex justify-between items-center">
+                                         <span className="font-medium">Total ({potionBuybackQty}x) :</span>
+                                         {selectedPotionBuyback.buybackPrice > 0 ? (
+                                           <span className="font-bold text-xl text-green-600">{selectedPotionBuyback.buybackPrice * potionBuybackQty} 💰</span>
+                                         ) : (
+                                           <span className="font-bold text-xl text-purple-600">{selectedPotionBuyback.loyaltyPoints * potionBuybackQty} 💎</span>
+                                         )}
+                                       </div>
+                                     </div>
+                                   </div>
+                                 )}
+
+                                 <button 
+                                   className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-medium" 
+                                   onClick={addPotionBuybackToCart}
+                                   disabled={!potionBuybackClientId || !selectedPotionBuyback}
+                                 >
+                                   🛒 Ajouter au panier
+                                 </button>
+
+                                 {/* PANIER RACHAT POTIONS */}
+                                 {potionBuybackCart.length > 0 && (() => {
+                                   const client = clients.find(c => c.id == potionBuybackClientId);
+                                   const totalCost = potionBuybackCart.reduce((sum, item) => sum + item.totalPrice, 0);
+                                   const totalPoints = potionBuybackCart.reduce((sum, item) => sum + item.totalPoints, 0);
+                                   const newTotalPoints = (client?.loyaltyPoints || 0) + totalPoints;
+                                   const currentRank = getLoyaltyRank(client?.loyaltyPoints || 0);
+                                   const newRank = getLoyaltyRank(newTotalPoints);
+
+                                   return (
+                                     <div className="border-2 border-rose-300 rounded p-4 bg-rose-50">
+                                       <h3 className="font-bold text-lg mb-3">🛒 Panier ({potionBuybackCart.length} potion{potionBuybackCart.length > 1 ? 's' : ''})</h3>
+                                       <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
+                                         {potionBuybackCart.map(item => (
+                                           <div key={item.id} className="bg-white p-3 rounded flex justify-between items-start">
+                                             <div className="flex-1">
+                                               <div className="font-medium">{item.qty}x {item.potionName}</div>
+                                               {item.buybackPrice > 0 ? (
+                                                 <div className="text-sm text-green-600">
+                                                   Prix: {item.totalPrice} 💰
+                                                 </div>
+                                               ) : (
+                                                 <div className="text-sm text-purple-600">
+                                                   Points: +{item.totalPoints} 💎
+                                                 </div>
+                                               )}
+                                             </div>
+                                             <button onClick={() => removePotionBuybackFromCart(item.id)} className="text-red-600 hover:text-red-800 font-bold ml-2">
+                                               ✕
+                                             </button>
+                                           </div>
+                                         ))}
+                                       </div>
+                                       <div className="bg-white p-3 rounded mb-3">
+                                         <div className="font-bold text-lg">Total panier:</div>
+                                         {totalCost > 0 && (
+                                           <div className="text-red-600 font-bold text-xl">
+                                             Coût: {totalCost} 💰
+                                           </div>
+                                         )}
+                                         {totalPoints > 0 && (
+                                           <>
+                                             <div className="text-purple-600 font-bold text-xl">
+                                               Points: +{totalPoints} 💎
+                                             </div>
+                                             <div className="border-t mt-2 pt-2">
+                                               <div className="text-sm">Points actuels: {client?.loyaltyPoints || 0} 💎</div>
+                                               <div className="text-sm font-bold text-purple-600">Nouveau total: {newTotalPoints} 💎</div>
+                                               {newRank.rank > currentRank.rank && (
+                                                 <div className="bg-purple-100 border border-purple-400 p-2 rounded text-center mt-2">
+                                                   <span className="text-purple-800 font-bold text-sm">
+                                                     🎉 RANG UP ! {currentRank.name} → {newRank.name}
+                                                   </span>
+                                                 </div>
+                                               )}
+                                             </div>
+                                           </>
+                                         )}
+                                       </div>
+
+                                       <div className="mb-3">
+                                         <label className="block text-sm font-medium mb-1">Employé acheteur</label>
+                                         <select className="w-full p-2 border rounded" value={potionBuybackEmployee} onChange={e=>setPotionBuybackEmployee(e.target.value)}>
+                                           <option value="">Sélectionner un employé</option>
+                                           {EMPLOYEES.map(e=><option key={e}>{e}</option>)}
+                                         </select>
+                                       </div>
+
+                                       <button className="w-full bg-rose-600 text-white p-2 rounded hover:bg-rose-700 font-medium" onClick={validatePotionBuyback}>
+                                         🧪 Valider le rachat ({potionBuybackCart.length} potion{potionBuybackCart.length > 1 ? 's' : ''})
+                                       </button>
+                                     </div>
+                                   );
+                                 })()}
+                               </div>
+                             )}
+
+                             {/* ===== RACHATS POTIONS EN COURS ===== */}
+                             {potionBuybacks.length > 0 && (
+                               <div className="bg-white p-6 rounded shadow">
+                                 <h2 className="text-xl font-bold mb-3">🧪 Rachats de potions (période en cours)</h2>
+                                 <div className="space-y-2 max-h-96 overflow-y-auto">
+                                   {potionBuybacks.map(buyback => {
+                                     const client = clients.find(c => c.id === buyback.clientId);
+                                     return (
+                                       <div key={buyback.id} className="border-b py-2 hover:bg-rose-50 rounded px-2">
+                                         <div className="flex justify-between items-start">
+                                           <div>
+                                             <span className="font-medium">{buyback.qty}x {buyback.potionName}</span>
+                                             <div className="text-sm text-gray-600">
+                                               Acheté à {client?.firstName} {client?.lastName} par {buyback.employee}
+                                             </div>
+                                             {buyback.totalPoints > 0 && (
+                                               <div className="text-sm font-medium text-purple-600">
+                                                 +{buyback.totalPoints} 💎 points gagnés
+                                               </div>
+                                             )}
+                                           </div>
+                                           <div className="text-right">
+                                             {buyback.totalPrice > 0 ? (
+                                               <div className="font-bold text-red-600">-{buyback.totalPrice} 💰</div>
+                                             ) : (
+                                               <div className="font-bold text-purple-600">+{buyback.totalPoints} 💎</div>
+                                             )}
+                                           </div>
+                                         </div>
+                                       </div>
+                                     );
+                                   })}
+                                 </div>
+                               </div>
+                             )}
+
+                             {showLoyaltyExchange && (
+                               <div className="bg-white p-6 rounded shadow space-y-3">
+                                 <h2 className="text-xl font-bold mb-3">⭐ Échanger des points de fidélité</h2>
+                                 
+                                 <div className="relative">
+                                   <label className="block text-sm font-medium mb-1">Rechercher un client</label>
+                                   <input 
+                                     type="text"
+                                     placeholder="Tapez un prénom, nom ou numéro de hibou..."
+                                     className="w-full p-2 border rounded"
+                                     value={loyaltyClientSearch}
+                                     onChange={e=>setLoyaltyClientSearch(e.target.value)}
+                                   />
+                                   
+                                   {loyaltyClientSearch && (
+                                     <div className="absolute z-10 w-full bg-white border rounded-b shadow-lg max-h-60 overflow-y-auto">
+                                       {filteredClients.length > 0 ? (
+                                         filteredClients.map(c => {
+                                           const rank = getLoyaltyRank(c.loyaltyPoints || 0);
+                                           return (
+                                             <div 
+                                               key={c.id}
+                                               onClick={() => selectLoyaltyClient(c.id)}
+                                               className="p-3 hover:bg-gray-100 cursor-pointer border-b"
+                                             >
+                                               <div className="font-medium flex items-center gap-2">
+                                                 {c.firstName} {c.lastName}
+                                                 <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                                                   {rank.name}
+                                                 </span>
+                                               </div>
+                                               <div className="text-sm text-gray-500 flex gap-3">
+                                                 <span>🦉 {c.owl}</span>
+                                                 <span className="text-pink-600 font-medium">💎 {c.loyaltyPoints || 0} pts</span>
+                                               </div>
+                                             </div>
+                                           );
+                                         })
+                                       ) : (
+                                         <div className="p-3 text-gray-500 italic">Aucun client trouvé</div>
+                                       )}
+                                     </div>
+                                   )}
+                                 </div>
+
+                                 {loyaltyClientId && (() => {
+                                   const selectedLoyaltyClient = clients.find(c => c.id == loyaltyClientId);
+                                   const rank = getLoyaltyRank(selectedLoyaltyClient?.loyaltyPoints || 0);
+                                   return (
+                                     <div className="bg-pink-50 border-2 border-pink-300 p-3 rounded">
+                                       <div className="font-bold text-pink-800">✓ Client sélectionné :</div>
+                                       <div className="flex items-center gap-2 mt-1">
+                                         <span className="font-medium">{selectedLoyaltyClient.firstName} {selectedLoyaltyClient.lastName}</span>
+                                         <span className={`${rank.color} text-white px-2 py-0.5 rounded text-xs font-bold`}>
+                                           {rank.name}
+                                         </span>
+                                       </div>
+                                       <div className="text-sm text-pink-700 mt-1">
+                                         💎 Points disponibles : {selectedLoyaltyClient.loyaltyPoints || 0}
+                                       </div>
+                                       <button 
+                                         onClick={() => {setLoyaltyClientId(''); setLoyaltyClientSearch('');}}
+                                         className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                       >
+                                         ✕ Changer de client
+                                       </button>
+                                     </div>
+                                   );
+                                 })()}
+
+                                 <div>
+                                   <label className="block text-sm font-medium mb-1">Potion à échanger</label>
+                                   <select className="w-full p-2 border rounded" value={loyaltyPotionName} onChange={e=>setLoyaltyPotionName(e.target.value)}>
+                                     <option value="">Sélectionner une potion</option>
+                                     {LOYALTY_POTIONS.map(p => (
+                                       <option key={p.name} value={p.name}>
+                                         {p.name} - {p.pointsCost} 💎 points
+                                       </option>
+                                     ))}
+                                   </select>
+                                 </div>
+
+                                 {selectedLoyaltyPotion && (
+                                   <div className="bg-purple-50 p-3 rounded">
+                                     <div className="font-bold">{selectedLoyaltyPotion.name}</div>
+                                     <div className="text-sm text-purple-600">Coût : {selectedLoyaltyPotion.pointsCost} 💎 points</div>
+                                   </div>
+                                 )}
+
+                                 <div>
+                                   <label className="block text-sm font-medium mb-1">Quantité</label>
+                                   <input type="number" min="1" className="w-full p-2 border rounded" value={loyaltyQty} onChange={e=>setLoyaltyQty(+e.target.value)} />
+                                 </div>
+
+                                 {selectedLoyaltyPotion && loyaltyClientId && (() => {
+                                   const client = clients.find(c => c.id == loyaltyClientId);
+                                   const totalCost = selectedLoyaltyPotion.pointsCost * loyaltyQty;
+                                   const remaining = (client?.loyaltyPoints || 0) - totalCost;
+                                   const canAfford = remaining >= 0;
+
+                                   return (
+                                     <div className={`p-4 rounded border-2 ${canAfford ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+                                       <div className="space-y-2">
+                                         <div className="flex justify-between items-center">
+                                           <span className="font-medium">Coût total ({loyaltyQty}x) :</span>
+                                           <span className="font-bold text-xl text-purple-600">{totalCost} 💎</span>
+                                         </div>
+                                         <div className="flex justify-between items-center border-t pt-2">
+                                           <span className="text-sm">Points actuels :</span>
+                                           <span className="font-medium">{client?.loyaltyPoints || 0} 💎</span>
+                                         </div>
+                                         <div className="flex justify-between items-center">
+                                           <span className="text-sm">Points restants :</span>
+                                           <span className={`font-bold ${canAfford ? 'text-green-600' : 'text-red-600'}`}>
+                                             {remaining} 💎
+                                           </span>
+                                         </div>
+                                         {!canAfford && (
+                                           <div className="bg-red-100 border border-red-400 p-2 rounded text-center">
+                                             <span className="text-red-800 font-bold text-sm">
+                                               ❌ Points insuffisants ! Il manque {Math.abs(remaining)} points.
+                                             </span>
+                                           </div>
+                                         )}
+                                       </div>
+                                     </div>
+                                   );
+                                 })()}
+
+                                 <div>
+                                   <label className="block text-sm font-medium mb-1">Employé responsable</label>
+                                   <select className="w-full p-2 border rounded" value={loyaltyEmployee} onChange={e=>setLoyaltyEmployee(e.target.value)}>
+                                     <option value="">Sélectionner un employé</option>
+                                     {EMPLOYEES.map(e=><option key={e}>{e}</option>)}
+                                   </select>
+                                 </div>
+
+                                 <button 
+                                   className="w-full bg-pink-600 text-white p-2 rounded hover:bg-pink-700 font-medium" 
+                                   onClick={exchangeLoyaltyPoints}
+                                   disabled={!loyaltyClientId || !selectedLoyaltyPotion || !loyaltyEmployee}
+                                 >
+                                   ⭐ Valider l'échange
+                                 </button>
+                               </div>
+                             )}
+
+                             {/* ===== MEILLEUR COLLECTEUR ===== */}
+                             {showTopCollector && (
+                               <div className="bg-white p-6 rounded shadow space-y-4">
+                                 <h2 className="text-xl font-bold mb-3">🏆 Meilleur collecteur de matériaux</h2>
+                                 
+                                 <div className="bg-amber-50 p-4 rounded border-2 border-amber-300">
+                                   <h3 className="font-bold text-lg mb-2">📊 Période en cours</h3>
+                                   {buybacks.length === 0 ? (
+                                     <p className="text-gray-500 italic">Aucun rachat dans la période actuelle</p>
+                                   ) : (() => {
+                                     const clientStats = {};
+                                     buybacks.forEach(buyback => {
+                                       if (!clientStats[buyback.clientId]) {
+                                         const client = clients.find(c => c.id === buyback.clientId);
+                                         clientStats[buyback.clientId] = {
+                                           clientName: `${client?.firstName} ${client?.lastName}`,
+                                           totalMaterials: 0,
+                                           totalPoints: 0,
+                                           totalCost: 0
+                                         };
+                                       }
+                                       clientStats[buyback.clientId].totalMaterials += buyback.qty;
+                                       clientStats[buyback.clientId].totalPoints += buyback.pointsEarned;
+                                       clientStats[buyback.clientId].totalCost += buyback.totalPrice;
+                                     });
+
+                                     const sortedClients = Object.values(clientStats).sort((a, b) => b.totalMaterials - a.totalMaterials);
+
+                                     return (
+                                       <div className="space-y-2">
+                                         {sortedClients.map((stat, index) => (
+                                           <div key={index} className={`p-3 rounded ${index === 0 ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-white'}`}>
+                                             <div className="flex justify-between items-center">
+                                               <div>
+                                                 <span className="font-bold">
+                                                   {index === 0 && '🥇 '}
+                                                   {index === 1 && '🥈 '}
+                                                   {index === 2 && '🥉 '}
+                                                   {stat.clientName}
+                                                 </span>
+                                               </div>
+                                               <div className="text-right">
+                                                 <div className="font-bold text-amber-600">{stat.totalMaterials} matériaux</div>
+                                                 <div className="text-sm text-gray-600">{stat.totalPoints} pts • {stat.totalCost} 💰</div>
+                                               </div>
+                                             </div>
+                                           </div>
+                                         ))}
+                                         <button 
+                                           onClick={saveTopCollector}
+                                           className="w-full bg-amber-600 text-white p-2 rounded hover:bg-amber-700 font-medium mt-3"
+                                         >
+                                           💾 Enregistrer le meilleur collecteur
+                                         </button>
+                                       </div>
+                                     );
+                                   })()}
+                                 </div>
+
+                                 {topCollectorHistory.length > 0 && (
+                                   <div>
+                                     <h3 className="font-bold text-lg mb-3">📚 Historique des meilleurs collecteurs</h3>
+                                     <div className="space-y-3">
+                                       {topCollectorHistory.map(period => (
+                                         <div key={period.id} className="border-2 border-gray-300 p-4 rounded bg-gray-50">
+                                           <div className="flex justify-between items-center mb-2">
+                                             <div className="text-sm text-gray-600">📅 {period.date}</div>
+                                           </div>
+                                           <div className="bg-yellow-100 border-2 border-yellow-400 p-3 rounded">
+                                             <div className="font-bold text-lg flex items-center gap-2">
+                                               🥇 {period.topCollector.clientName}
+                                             </div>
+                                             <div className="text-amber-600 font-bold">
+                                               {period.topCollector.totalMaterials} matériaux collectés
+                                             </div>
+                                             <div className="text-sm text-gray-600">
+                                               {period.topCollector.totalPoints} points • {period.topCollector.totalCost} 💰 payés
+                                             </div>
+                                           </div>
+                                           <details className="mt-2">
+                                             <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                                               Voir le classement complet
+                                             </summary>
+                                             <div className="mt-2 space-y-1">
+                                               {period.allStats.map((stat, index) => (
+                                                 <div key={index} className="text-sm p-2 bg-white rounded">
+                                                   {index + 1}. {stat.clientName} - {stat.totalMaterials} matériaux
+                                                 </div>
+                                               ))}
+                                             </div>
+                                           </details>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                             )}
+
+                                             {/* ===== AJOUT COMMANDE POTION ===== */}
+                                       {showAddOrder && (
+                                            <div className="bg-white p-6 rounded shadow space-y-3">
+                                              <h2 className="text-xl font-bold mb-3">📝 Nouvelle commande potion</h2>
+                                              
+                                              <div className="relative">
+                                                <label className="block text-sm font-medium mb-1">Rechercher un client</label>
+                                                <input 
+                                                  type="text"
+                                                  placeholder="Tapez un prénom, nom ou numéro de hibou..."
+                                                  className="w-full p-2 border rounded"
+                                                  value={clientSearch}
+                                                  onChange={e=>setClientSearch(e.target.value)}
+                                                />
+                                                                
+                                                                {clientSearch && (
+                                                                  <div className="absolute z-10 w-full bg-white border rounded-b shadow-lg max-h-60 overflow-y-auto">
+                                                                    {filteredClients.length > 0 ? (
+                                                                      filteredClients.map(c => (
+                                                                        <div 
+                                                                          key={c.id}
+                                                                          onClick={() => selectClient(c.id)}
+                                                                          className="p-3 hover:bg-gray-100 cursor-pointer border-b flex items-center gap-3"
+                                                                        >
+                                                                          <div className={`w-6 h-6 ${circleColor(c.circle)} text-white rounded-full flex items-center justify-center text-xs font-bold`}>{c.circle}</div>
+                                                                          <div>
+                                                                            <div className="font-medium">{c.firstName} {c.lastName}</div>
+                                                                            <div className="text-sm text-gray-500">🦉 {c.owl} {c.vip && `• ⭐ ${c.vip}`}</div>
+                                                                          </div>
+                                                                        </div>
+                                                                      ))
+                                                                    ) : (
+                                                                      <div className="p-3 text-gray-500 italic">Aucun client trouvé</div>
+                                                                    )}
+                                                                  </div>
+                                                                )}
+                                                              </div>
+
+                                                              {selectedClient && (
+                                                                <div className="bg-green-50 border-2 border-green-300 p-3 rounded">
+                                                                  <div className="font-bold text-green-800">✓ Client sélectionné :</div>
+                                                                  <div className="flex items-center gap-2 mt-1">
+                                                                    <div className={`w-6 h-6 ${circleColor(selectedClient.circle)} text-white rounded-full flex items-center justify-center text-xs font-bold`}>{selectedClient.circle}</div>
+                                                                    <span className="font-medium">{selectedClient.firstName} {selectedClient.lastName}</span>
+                                                                    <span className="text-gray-600">🦉 {selectedClient.owl}</span>
+                                                                    {selectedClient.vip && <span className="bg-amber-500 text-white px-2 py-0.5 rounded text-xs">⭐ {selectedClient.vip}</span>}
+                                                                  </div>
+                                                                  <button 
+                                                                    onClick={() => {setClientId(''); setClientSearch('');}}
+                                                                    className="mt-2 text-sm text-red-600 hover:text-red-800"
+                                                                  >
+                                                                    ✕ Changer de client
+                                                                  </button>
+                                                                </div>
+                                                              )}
+
+                                                              <select className="w-full p-2 border rounded" value={potionName} onChange={e=>setPotionName(e.target.value)}>
+                                                                <option value="">Sélectionner une potion</option>
+                                                                {POTIONS.map(p=><option key={p.name}>{p.name}</option>)}
+                                                              </select>
+                                                              {potion && <div className="text-gray-700 font-medium">Prix unitaire : {potion.price} 💰 pièces d'or</div>}
+                                                              <div>
+                                                                <label className="block text-sm font-medium mb-1">Quantité</label>
+                                                                <input type="number" min="1" className="w-full p-2 border rounded" value={qty} onChange={e=>setQty(+e.target.value)} />
+                                                              </div>
+                                                              <label className="flex items-center gap-2 cursor-pointer">
+                                                                <input type="checkbox" checked={priorityStandard} onChange={e=>setPriorityStandard(e.target.checked)} className="w-4 h-4" />
+                                                                <span>Priorité standard (+50%)</span>
+                                                              </label>
+                                                              <button className="w-full bg-emerald-600 text-white p-2 rounded hover:bg-emerald-700 font-medium" onClick={addOrder}>
+                                                                ✓ Créer la commande
+                                                              </button>
+                                                            </div>
+                                                          )}
+
+                                                          {/* ===== COMMANDES EN COURS ===== */}
+                                                          {sortedOrders.length > 0 && (
+                                                            <div className="space-y-4">
+                                                              <h2 className="text-2xl font-bold">📋 Commandes potions en cours</h2>
+                                                              {sortedOrders.map(o=>{
+                                                                const client = clients.find(c=>c.id===o.clientId);
+                                                                const potion = POTIONS.find(p=>p.name===o.potionName);
+                                                                const failCost = o.failed * potion.cost;
+                                                                const profit = o.price - o.baseCost - failCost;
+                                                                
+                                                                let bgClass = 'bg-white';
+                                                                let borderClass = 'border-gray-300';
+                                                                let priorityBadge = null;
+                                                                
+                                                                if (o.isLoyaltyExchange) {
+                                                                  bgClass = 'bg-purple-50';
+                                                                  borderClass = 'border-purple-500';
+                                                                  priorityBadge = <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">💎 ÉCHANGE POINTS</span>;
+                                                                } else if (o.priorityPlus) {
+                                                                  bgClass = 'bg-pink-100';
+                                                                  borderClass = 'border-pink-500';
+                                                                  priorityBadge = <span className="bg-pink-600 text-white px-3 py-1 rounded-full text-sm font-bold">🔥 PRIORITÉ CONTRAT</span>;
+                                                                } else if (o.priorityStandard) {
+                                                                  bgClass = 'bg-yellow-100';
+                                                                  borderClass = 'border-yellow-500';
+                                                                  priorityBadge = <span className="bg-yellow-600 text-white px-3 py-1 rounded-full text-sm font-bold">⚡ PRIORITÉ STANDARD</span>;
+                                                                }
+                                                                
+                                                                return (
+                                                                  <div key={o.id} className={`${bgClass} p-6 rounded-lg shadow-md border-4 ${borderClass}`}>
+                                                                    <div className="flex justify-between items-start mb-4">
+                                                                      <div>
+                                                                        <div className="font-bold text-lg flex items-center gap-2 mb-2">
+                                                                          {client.firstName} {client.lastName}
+                                                                          {client.vip && (
+                                                                            <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md">
+                                                                              ⭐ {client.vip.toUpperCase()}
+                                                                            </span>
+                                                                          )}
+                                                                        </div>
+                                                                        <div className="text-3xl font-bold text-purple-700 mb-1">
+                                                                          🧪 {o.qty}x {o.potionName}
+                                                                        </div>
+                                                                        <div className="text-gray-600 font-medium">🦉 Hibou: {client.owl}</div>
+                                                                      </div>
+                                                                      {priorityBadge}
+                                                                    </div>
+                                                                    
+                                                                    <div className="grid grid-cols-2 gap-2 text-sm mb-3 bg-white bg-opacity-50 p-3 rounded">
+                                                                      {o.isLoyaltyExchange ? (
+                                                                        <>
+                                                                          <div>💎 Coût en points : <span className="font-bold text-lg text-purple-600">{o.pointsCost} points</span></div>
+                                                                          <div>💰 Déjà payé : <span className="font-bold text-green-600">✓ OUI</span></div>
+                                                                          <div>📅 Date : {o.date}</div>
+                                                                          <div>❌ Échecs : <span className="font-bold">{o.failed}</span></div>
+                                                                        </>
+                                                                      ) : (
+                                                                        <>
+                                                                          <div>💰 Prix total : <span className="font-bold text-lg">{o.price} pièces d'or</span></div>
+                                                                          <div>📅 Date : {o.date}</div>
+                                                                          <div>❌ Échecs : <span className="font-bold">{o.failed}</span></div>
+                                                                          <div className={profit<0?'text-red-600 font-bold':'text-green-600 font-bold'}>
+                                                                            📊 Profit : {profit} pièces d'or
+                                                                          </div>
+                                                                        </>
+                                                                      )}
+                                                                    </div>
+
+                                                                    <div className="mb-3">
+                                                                      <label className="block text-sm font-medium mb-1">👤 Assigner un employé :</label>
+                                                                      <select 
+                                                                        className="w-full p-2 border rounded" 
+                                                                        value={o.employee} 
+                                                                        onChange={e=>assignEmployee(o.id, e.target.value)}
+                                                                      >
+                                                                        <option value="">Sélectionner un employé</option>
+                                                                        {EMPLOYEES.map(e=><option key={e}>{e}</option>)}
+                                                                      </select>
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex gap-2 mt-4 flex-wrap">
+                                                  <button onClick={()=>failPotion(o.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium">
+                                                    ❌ Échec
+                                                  </button>
+                                                  <button onClick={()=>toggleCompleted(o.id)} className={`${o.completed?'bg-green-500 hover:bg-green-600':'bg-gray-500 hover:bg-gray-600'} text-white px-4 py-2 rounded font-medium`}>
+                                                    {o.completed?'✓ Terminée':'⏳ Marquer comme terminée'}
+                                                  </button>
+                                                  {!o.isLoyaltyExchange && (
+                                                    <button onClick={()=>togglePaid(o.id)} className={`${o.paid?'bg-green-500 hover:bg-green-600':'bg-blue-500 hover:bg-blue-600'} text-white px-4 py-2 rounded font-medium`}>
+                                                      {o.paid?'✓ Payé':'💳 Marquer comme payé'}
+                                                    </button>
+                                                  )}
+                                                  {o.isLoyaltyExchange && (
+                                                    <div className="bg-green-100 border-2 border-green-500 px-4 py-2 rounded font-medium text-green-700">
+                                                      ✓ Payé avec {o.pointsCost} 💎 points
+                                                    </div>
+                                                  )}
+                                                  <button onClick={()=>deliver(o)} disabled={!o.paid || !o.completed || !o.employee} className={`${o.paid && o.completed && o.employee?'bg-emerald-600 hover:bg-emerald-700':'bg-gray-400 cursor-not-allowed'} text-white px-4 py-2 rounded font-medium`} title={!o.employee?'Vous devez assigner un employé':!o.paid || !o.completed?'La commande doit être payée ET terminée avant d\'être livrée':''}>
+                                                    📦 Livrer
+                                                  </button>
+                                                  <div className="flex gap-2 items-center">
+                                                    <input 
+                                                  type="number" 
+                                                  min="1" 
+                                                  value={o.qty}
+                                                  onChange={(e) => {
+                                                    const newQty = +e.target.value;
+                                                    if (newQty > 0 && confirm('Êtes-vous sûr de vouloir modifier la quantité de cette commande ?')) {
+                                                          const potion = POTIONS.find(p => p.name === o.potionName);
+                                                          const client = clients.find(c => c.id === o.clientId);
+                                                          let newPrice = potion.price * newQty;
+                                                          if (client.vip==='Vip Clauser') newPrice*=0.9;
+                                                          if (client.vip==='Vip Banque' && potion.name==='Vitalis 💰 600') newPrice*=0.95;
+                                                          if (o.priorityStandard) newPrice*=1.5;
+                                                          setOrders(orders.map(order => order.id===o.id ? {...order, qty: newQty, baseCost: potion.cost*newQty, price: Math.round(newPrice)} : order));
+                                                        }
+                                                      }}
+                                                      className="w-20 p-2 border rounded"
+                                                    />
+                                                    <button 
+                                                      onClick={()=>{
+                                                        if(confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
+                                                          setOrders(orders.filter(x=>x.id!==o.id));
+                                                        }
+                                                      }}
+                                                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded font-medium"
+                                                    >
+                                                      🗑️ Annuler
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                                                  </div>
+                                                                );
+                                                              })}
+                                                            </div>
+                                                          )}
+
+                                                          {/* ===== VENTES INGREDIENTS EN COURS ===== */}
+                                                          {ingredientSales.length > 0 && (
+                                                            <div className="bg-white p-6 rounded shadow">
+                                                              <h2 className="text-xl font-bold mb-3">🌿 Ventes d'ingrédients (période en cours)</h2>
+                                                              <div className="space-y-2 max-h-96 overflow-y-auto">
+                                                                {ingredientSales.map(sale => (
+                                                                    <div key={sale.id} className="border-b py-2 hover:bg-gray-50 rounded px-2">
+                                                                      <div className="flex justify-between items-start">
+                                                                      <div>
+                                                                      <span className="font-medium">{sale.qty}x {sale.ingredient}</span>
+                                                                        <span className="text-xs text-gray-500 ml-2">({sale.category})</span>
+                                                                    <div className="text-sm text-gray-600">
+                                                                    Vendu par {sale.employee} • Vente: {sale.unitSalePrice} 💰/u • Coût: {sale.unitCostPrice} 💰/u
+                                                                        </div>
+                                                                            <div className="text-sm font-medium text-green-600">
+                                                                            Profit: +{sale.totalProfit} 💰
+                                                                            </div>
+                                                                                    </div>
+                                                                            <div className="text-right">
+                                                                            <div className="font-bold text-blue-600">Vente: {sale.totalSalePrice} 💰</div>
+                                                                                  <div className="text-sm text-red-600">Coût: -{sale.totalCostPrice} 💰</div>
+                                                                        </div>
+                                                                                </div>
+                                                                                </div>
+                                                                                    ))}
+                                                                </div>
+                                                              </div>
+                                                            )}
+                                                            {/* ===== RACHATS EN COURS ===== */}
+                                                  {buybacks.length > 0 && (
+                                                    <div className="bg-white p-6 rounded shadow">
+                                                      <h2 className="text-xl font-bold mb-3">💎 Rachats de matériaux (période en cours)</h2>
+                                                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                                                        {buybacks.map(buyback => {
+                                                          const client = clients.find(c => c.id === buyback.clientId);
+                                                          return (
+                                                            <div key={buyback.id} className="border-b py-2 hover:bg-amber-50 rounded px-2">
+                                                              <div className="flex justify-between items-start">
+                                                                <div>
+                                                                  <span className="font-medium">{buyback.qty}x {buyback.material}</span>
+                                                                  <div className="text-sm text-gray-600">
+                                                                    Acheté à {client?.firstName} {client?.lastName} par {buyback.employee}
+                                                                  </div>
+                                                                  <div className="text-xs text-amber-600">
+                                                                    Rang au moment de l'achat : {buyback.rankAtPurchase}
+                                                                  </div>
+                                                                  <div className="text-sm font-medium text-amber-600">
+                                                                    +{buyback.pointsEarned} 💎 points gagnés
+                                                                  </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                  <div className="font-bold text-red-600">-{buyback.totalPrice} 💰</div>
+                                                                  <div className="text-xs text-gray-500">{buyback.unitPrice} 💰/u</div>
+                                                                </div>
+                                                              </div>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                            {/* ===== COMPTABILITÉ ===== */}
+                                                            <div className="bg-white p-6 rounded shadow">
+                                                              <div className="flex justify-between items-center mb-4">
+                                                                <h2 className="text-xl font-bold">📊 Comptabilité - Période en cours</h2>
+                                                                <div className="flex gap-2">
+                                                                  <button 
+                                                                    onClick={()=>setShowAccountingHistory(!showAccountingHistory)}
+                                                                    className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 font-medium"
+                                                                  >
+                                                                    📚 Historique
+                                                                  </button>
+                                                                  <button 
+                                                                    onClick={closePeriod}
+                                                                    className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 font-medium"
+                                                                    disabled={history.length === 0 && ingredientSales.length === 0}
+                                                                  >
+                                                                    🔒 Clôturer la période
+                                                                  </button>
+                                                                </div>
+                                                              </div>
+                                                              
+                                                              {/* Vue d'ensemble globale */}
+                                                              <div className="bg-gradient-to-r from-indigo-100 to-purple-100 p-5 rounded-lg border-2 border-indigo-300 mb-6">
+                                                                <h3 className="text-lg font-bold mb-3 text-center">💼 Bilan Financier</h3>
+                                                                
+                                                                <div className="grid grid-cols-3 gap-3 mb-3">
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                                    <div className="text-xs text-gray-600 font-medium">CA Potions</div>
+                                                                    <div className="text-lg font-bold text-blue-600">{totalRevenuePotions}</div>
+                                                                  </div>
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                                    <div className="text-xs text-gray-600 font-medium">CA Ingrédients</div>
+                                                                    <div className="text-lg font-bold text-teal-600">{totalRevenueIngredients}</div>
+                                                                  </div>
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                                    <div className="text-xs text-gray-600 font-medium">CA Total</div>
+                                                                    <div className="text-xl font-bold text-blue-600">{totalRevenue}</div>
+                                                                  </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                    <div className="text-xs text-gray-600 font-medium">Coûts Total</div>
+                                                    <div className="text-xl font-bold text-orange-600">{totalCost}</div>
+                                                    <div className="text-xs text-gray-500">Prod: {totalProductionCost} • Échecs: {totalFailureCost} • Ingré: {totalCostIngredients} • Rachats: {totalBuybackCost}</div>
+                                                  </div>
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                                    <div className="text-xs text-gray-600 font-medium">Profit Brut</div>
+                                                                    <div className={`text-xl font-bold ${grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                      {grossProfit >= 0 ? '+' : ''}{grossProfit}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500">pièces d'or</div>
+                                                                  </div>
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                                    <div className="text-xs text-gray-600 font-medium">Salaires</div>
+                                                                    <div className="text-xl font-bold text-red-600">-{totalSalaries}</div>
+                                                                    <div className="text-xs text-gray-500">pièces d'or</div>
+                                                                  </div>
+                                                                  <div className="text-center bg-white p-3 rounded shadow">
+                                                                    <div className="text-xs text-gray-600 font-medium">Impôts (45%)</div>
+                                                                    <div className="text-xl font-bold text-red-600">-{taxes}</div>
+                                                                    <div className="text-xs text-gray-500">pièces d'or</div>
+                                                                  </div>
+                                                                </div>
+                                                                
+                                                                <div className="text-center bg-white p-3 rounded shadow">
+                                                                  <div className="text-sm text-gray-600 font-medium">🎯 Profit Net</div>
+                                                                  <div className={`text-3xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {netProfit >= 0 ? '+' : ''}{netProfit}
+                                                                  </div>
+                                                                  <div className="text-xs text-gray-500">pièces d'or</div>
+                                                                </div>
+                                                              </div>
+
+                                                              {/* Salaires par employé */}
+                                                              <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-300 mb-6">
+                                                                <h3 className="text-lg font-bold mb-3">👥 Salaires & Primes (toutes les 2 semaines)</h3>
+                                                  <p className="text-xs text-gray-600 mb-3">* Prime de 5% sur le CA au-delà de 30 000 💰</p>
+                                                  <div className="grid md:grid-cols-3 gap-3">
+                                                                  {EMPLOYEES.map(emp => {
+                                                    const stats = employeeStats[emp];
+                                                    const bonusEligibleCA = Math.max(0, stats.totalRevenueGenerated - 30000);
+                                                    return (
+                                                                      <div key={emp} className="bg-white p-4 rounded shadow">
+                                                                        <div className="font-bold text-center mb-2">{emp}</div>
+                                                                        <div className="text-sm space-y-1">
+                                                                          <div className="flex justify-between">
+                                                                            <span>🧪 Potions :</span>
+                                                                            <span className="font-bold">{stats.ordersCompleted}</span>
+                                                                          </div>
+                                                                          <div className="flex justify-between">
+                                                                            <span>🌿 Ingrédients :</span>
+                                                                            <span className="font-bold">{stats.ingredientsSold}</span>
+                                                                          </div>
+                                                                          <div className="flex justify-between">
+                                                                            <span>CA total :</span>
+                                                                            <span className="font-bold text-blue-600">{stats.totalRevenueGenerated} 💰</span>
+                                                                            {bonusEligibleCA > 0 && (
+                                                    <div className="flex justify-between text-xs text-green-600">
+                                                      <span>CA éligible prime :</span>
+                                                      <span className="font-bold">{bonusEligibleCA} 💰</span>
+                                                    </div>
+                                                  )}
+                                                                          </div>
+                                                                          <div className="border-t pt-1 mt-1">
+                                                                            <div className="flex justify-between">
+                                                                              <span>Salaire base :</span>
+                                                                              <span className="font-bold">{stats.baseSalary} 💰</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between text-green-600">
+                                                                              <span>Prime (5%) :</span>
+                                                                              <span className="font-bold">+{stats.bonus} 💰</span>
+                                                                            </div>
+                                                                            <div className="flex justify-between border-t pt-1 mt-1">
+                                                                              <span className="font-bold">Total :</span>
+                                                                              <span className="font-bold text-lg text-green-600">{stats.totalSalary} 💰</span>
+                                                                            </div>
+                                                                          </div>
+                                                                        </div>
+                                                                      </div>
+                                                                    );
+                                                                  })}
+                                                                </div>
+                                                              </div>
+                                                            </div>
+
+                                                            {/* ===== HISTORIQUE COMPTABLE ===== */}
+                                                            {showAccountingHistory && (
+                                                              <div className="bg-white p-6 rounded shadow">
+                                                                <div className="flex justify-between items-center mb-4">
+                                                                  <h2 className="text-xl font-bold">📚 Historique des Périodes Clôturées</h2>
+                                                                  <button 
+                                                                    onClick={()=>setShowAccountingHistory(false)}
+                                                                    className="text-gray-600 hover:text-gray-800"
+                                                                  >
+                                                                    ✕ Fermer
+                                                                  </button>
+                                                                </div>
+                                                                
+                                                                {accountingHistory.length === 0 ? (
+                                                                  <p className="text-gray-500 italic">Aucune période clôturée</p>
+                                                                ) : (
+                                                                  <div className="space-y-4">
+                                                                    {accountingHistory.map(period => (
+                                                                      <div key={period.id} className="border-2 border-gray-300 p-4 rounded-lg bg-gray-50">
+                                                                        <div className="flex justify-between items-center mb-3">
+                                                                          <h3 className="font-bold text-lg">Période clôturée le {period.date}</h3>
+                                                                          <span className="text-sm text-gray-600">
+                                                                            {period.ordersCount} potions • {period.ingredientSalesCount} ingrédients
+                                                                          </span>
+                                                                        </div>
+                                                                        
+                                                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+                                                                          <div className="bg-white p-2 rounded text-center">
+                                                                            <div className="text-xs text-gray-600">CA Potions</div>
+                                                                            <div className="font-bold text-blue-600">{period.totalRevenuePotions}</div>
+                                                                          </div>
+                                                                          <div className="bg-white p-2 rounded text-center">
+                                                                            <div className="text-xs text-gray-600">CA Ingré.</div>
+                                                                            <div className="font-bold text-teal-600">{period.totalRevenueIngredients}</div>
+                                                                          </div>
+                                                                          <div className="bg-white p-2 rounded text-center">
+                                                                            <div className="text-xs text-gray-600">Profit Brut</div>
+                                                                            <div className="font-bold text-green-600">{period.grossProfit}</div>
+                                                                          </div>
+                                                                          <div className="bg-white p-2 rounded text-center">
+                                                                            <div className="text-xs text-gray-600">Salaires</div>
+                                                                            <div className="font-bold text-red-600">-{period.totalSalaries}</div>
+                                                                          </div>
+                                                                          <div className="bg-white p-2 rounded text-center">
+                                                                            <div className="text-xs text-gray-600">Profit Net</div>
+                                                                            <div className={`font-bold ${period.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                              {period.netProfit >= 0 ? '+' : ''}{period.netProfit}
+                                                                            </div>
+                                                                          </div>
+                                                                        </div>
+                                                                        
+                                                                        <details className="mt-2">
+                                                                          <summary className="cursor-pointer font-medium text-blue-600 hover:text-blue-800">
+                                                                            Détails des salaires
+                                                                          </summary>
+                                                                          <div className="grid md:grid-cols-3 gap-2 mt-2">
+                                                                            {Object.entries(period.employeeStats).map(([emp, stats]) => (
+                                                                              <div key={emp} className="bg-white p-2 rounded text-sm">
+                                                                                <div className="font-bold">{emp}</div>
+                                                                                <div>🧪 {stats.ordersCompleted} • 🌿 {stats.ingredientsSold}</div>
+                                                                                <div className="text-green-600 font-bold">{stats.totalSalary} 💰</div>
+                                                                              </div>
+                                                                            ))}
+                                                                          </div>
+                                                                        </details>
+                                                                      </div>
+                                                                    ))}
+                                                                  </div>
+                                                                )}
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        );
+                                                      }
+
+                                                      ReactDOM.render(<App />, document.getElementById('app'));
+                                                    </script>
+                                                  </body>
+                                                  </html>
